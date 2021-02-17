@@ -18,6 +18,7 @@
 
 const CID = require('cids');
 const multiH = require('multihashes');
+const base64 = require('js-base64')
 
 /**
  * Convert an hexadecimal string to a Buffer, the string can start with or without '0x'
@@ -70,16 +71,23 @@ const encodes = {
   * @param {string} value
   * @return {Buffer}
   */
+  skynet: (value) => {
+    return base64.toUint8Array(value)
+  },
+  /**
+  * @param {string} value
+  * @return {Buffer}
+  */
   swarm: (value) => {
     const multihash = multiH.encode(hexStringToBuffer(value), 'keccak-256');
-		return new CID(1, 'swarm-manifest', multihash).buffer;
+		return new CID(1, 'swarm-manifest', multihash).bytes;
   },
   /**
   * @param {string} value
   * @return {Buffer}
   */
   ipfs: (value) => {
-    return new CID(value).toV1().buffer;
+    return new CID(value).toV1().bytes;
   },
   /**
   * @param {string} value
@@ -92,7 +100,7 @@ const encodes = {
     }
     // Represent IPNS name as a CID with libp2p-key codec
     // https://github.com/libp2p/specs/blob/master/RFC/0001-text-peerid-cid.md
-    return new CID(1, 'libp2p-key', cid.multihash).buffer
+    return new CID(1, 'libp2p-key', cid.multihash).bytes
   },
   /**
   * @param {string} value
@@ -143,6 +151,10 @@ const decodes = {
   utf8: (value) => {
     return value.toString('utf8');
   },
+  base64: (value) => {
+    // `true` option makes it URL safe (replaces / and + with - and _ )
+    return base64.fromUint8Array(value, true)
+  }
 };
 
 /**
@@ -151,6 +163,10 @@ const decodes = {
 * `decode` should be chosen among the `decodes` functions
 */
 const profiles = {
+  'skynet-ns': {
+    encode: encodes.skynet,
+    decode: decodes.base64,
+  },
   'swarm-ns': {
     encode: encodes.swarm,
     decode: decodes.hexMultiHash,
