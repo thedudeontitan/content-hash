@@ -58,7 +58,6 @@ const isCryptographicIPNS =  (cid) => {
     // ok, CID looks fine
     return true
   } catch (_) { return false }
-  return false
 }
 
 /**
@@ -108,6 +107,13 @@ const encodes = {
   */
   utf8: (value) => {
     return Buffer.from(value, 'utf8');
+  },
+  /**
+  * @param {string} value
+  * @return {Buffer}
+  */
+  arweave: (value) => {
+    return base64.toUint8Array(value)
   },
 };
 
@@ -178,6 +184,10 @@ const profiles = {
   'ipns-ns': {
     encode: encodes.ipns,
     decode: decodes.ipns,
+  },
+  'arweave-ns': {
+    encode: encodes.arweave,
+    decode: decodes.base64,
   },
   'default': {
     encode: encodes.utf8,

@@ -1,4 +1,3 @@
-
 const should = require('chai').should()
 const expect = require('chai').expect
 const contentHash = require('../src/index.js')
@@ -21,7 +20,8 @@ const ipfsBase32DagPb = 'bafybeibj6lixxzqtsb45ysdjnupvqkufgdvzqbnvmhw2kf7cfkesy7
 const ipfsBase32Libp2pKey = 'bafzbeie5745rpv2m6tjyuugywy4d5ewrqgqqhfnf445he3omzpjbx5xqxe';
 const skylink = 'CABAB_1Dt0FJsxqsu_J4TodNCbCGvtFf1Uys_3EgzOlTcg'
 const skylink_contentHash = '90b2c60508004007fd43b74149b31aacbbf2784e874d09b086bed15fd54cacff7120cce95372'
-
+const arweave = 'ys32Pt8uC7TrVxHdOLByOspfPEq2LO63wREHQIM9SJQ'
+const arweave_contentHash = '90b2ca05cacdf63edf2e0bb4eb5711dd38b0723aca5f3c4ab62ceeb7c1110740833d4894'
 describe('content-hash (legacy tests)', () =>
 	{
 		it('should decode a content hash', () => {
@@ -180,6 +180,20 @@ describe('content-hash', () => {
 		});
 	});
 
+  describe('arweave', () => {
+    it('should encode', () => {
+        const actual = contentHash.encode('arweave-ns', arweave);
+        actual.should.be.equal(arweave_contentHash);
+    });
+    it('should getCodec', () => {
+        const actual = contentHash.getCodec(arweave_contentHash);
+        actual.should.be.equal('arweave-ns');
+    });
+    it('should decode', () => {
+        const actual = contentHash.decode(arweave_contentHash);
+        actual.should.be.equal(arweave);
+    });
+  });
 	describe('helpers.cidV0ToV1Base32', () => {
 		const { cidV0ToV1Base32 } = contentHash.helpers;
 		it('should convert CID v0 into v1', () => {

@@ -1,6 +1,6 @@
 {
   "name": "@ensdomains/content-hash",
-  "version": "2.5.6",
+  "version": "2.5.7",
   "description": "simple tool to encode/decode content hash for EIP 1577 compliant ENS Resolvers (fork of pldespaigne/content-hash)",
   "main": "./src/index.js",
   "repository": {
@@ -20,7 +20,7 @@
   "dependencies": {
     "cids": "^1.1.5",
     "js-base64": "^3.6.0",
-    "multicodec": "^2.1.0",
+    "multicodec": "^3.2.0",
     "multihashes": "^2.0.0"
   },
   "devDependencies": {

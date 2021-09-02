@@ -71,6 +71,15 @@ module.exports = {
 		return this.encode('swarm-ns', swarmHash);
 	},
 
+    /**
+	* Encode a arweave address into a content hash
+	* @param {string} swarmHash string containing a arweave address
+	* @return {string} the resulting content hash
+	*/
+    fromArweave: function(arweave) {
+        return this.encode('arweave-ns', arweave);
+    },
+
 	/**
 	* General purpose encoding function
   * @param {string} codec 

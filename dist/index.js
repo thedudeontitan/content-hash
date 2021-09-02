@@ -250,7 +250,7 @@ function base (ALPHABET) {
 }
 module.exports = base
 
-},{"safe-buffer":44}],3:[function(require,module,exports){
+},{"safe-buffer":55}],3:[function(require,module,exports){
 'use strict'
 
 exports.byteLength = byteLength
@@ -378,9 +378,7 @@ function fromByteArray (uint8) {
 
   // go through the array every three bytes, we'll deal with trailing stuff later
   for (var i = 0, len2 = len - extraBytes; i < len2; i += maxChunkLength) {
-    parts.push(encodeChunk(
-      uint8, i, (i + maxChunkLength) > len2 ? len2 : (i + maxChunkLength)
-    ))
+    parts.push(encodeChunk(uint8, i, (i + maxChunkLength) > len2 ? len2 : (i + maxChunkLength)))
   }
 
   // pad the end with zeros, but make sure to not forget the extra bytes
@@ -405,7 +403,7 @@ function fromByteArray (uint8) {
 }
 
 },{}],4:[function(require,module,exports){
-(function (Buffer){
+(function (Buffer){(function (){
 /*!
  * The buffer module from node.js, for the browser.
  *
@@ -418,10 +416,6 @@ function fromByteArray (uint8) {
 
 var base64 = require('base64-js')
 var ieee754 = require('ieee754')
-var customInspectSymbol =
-  (typeof Symbol === 'function' && typeof Symbol.for === 'function')
-    ? Symbol.for('nodejs.util.inspect.custom')
-    : null
 
 exports.Buffer = Buffer
 exports.SlowBuffer = SlowBuffer
@@ -458,9 +452,7 @@ function typedArraySupport () {
   // Can typed array instances can be augmented?
   try {
     var arr = new Uint8Array(1)
-    var proto = { foo: function () { return 42 } }
-    Object.setPrototypeOf(proto, Uint8Array.prototype)
-    Object.setPrototypeOf(arr, proto)
+    arr.__proto__ = { __proto__: Uint8Array.prototype, foo: function () { return 42 } }
     return arr.foo() === 42
   } catch (e) {
     return false
@@ -489,7 +481,7 @@ function createBuffer (length) {
   }
   // Return an augmented `Uint8Array` instance
   var buf = new Uint8Array(length)
-  Object.setPrototypeOf(buf, Buffer.prototype)
+  buf.__proto__ = Buffer.prototype
   return buf
 }
 
@@ -539,7 +531,7 @@ function from (value, encodingOrOffset, length) {
   }
 
   if (value == null) {
-    throw new TypeError(
+    throw TypeError(
       'The first argument must be one of type string, Buffer, ArrayBuffer, Array, ' +
       'or Array-like Object. Received type ' + (typeof value)
     )
@@ -591,8 +583,8 @@ Buffer.from = function (value, encodingOrOffset, length) {
 
 // Note: Change prototype *after* Buffer.from is defined to workaround Chrome bug:
 // https://github.com/feross/buffer/pull/148
-Object.setPrototypeOf(Buffer.prototype, Uint8Array.prototype)
-Object.setPrototypeOf(Buffer, Uint8Array)
+Buffer.prototype.__proto__ = Uint8Array.prototype
+Buffer.__proto__ = Uint8Array
 
 function assertSize (size) {
   if (typeof size !== 'number') {
@@ -696,8 +688,7 @@ function fromArrayBuffer (array, byteOffset, length) {
   }
 
   // Return an augmented `Uint8Array` instance
-  Object.setPrototypeOf(buf, Buffer.prototype)
-
+  buf.__proto__ = Buffer.prototype
   return buf
 }
 
@@ -1019,9 +1010,6 @@ Buffer.prototype.inspect = function inspect () {
   if (this.length > max) str += ' ... '
   return '<Buffer ' + str + '>'
 }
-if (customInspectSymbol) {
-  Buffer.prototype[customInspectSymbol] = Buffer.prototype.inspect
-}
 
 Buffer.prototype.compare = function compare (target, start, end, thisStart, thisEnd) {
   if (isInstance(target, Uint8Array)) {
@@ -1147,7 +1135,7 @@ function bidirectionalIndexOf (buffer, val, byteOffset, encoding, dir) {
         return Uint8Array.prototype.lastIndexOf.call(buffer, val, byteOffset)
       }
     }
-    return arrayIndexOf(buffer, [val], byteOffset, encoding, dir)
+    return arrayIndexOf(buffer, [ val ], byteOffset, encoding, dir)
   }
 
   throw new TypeError('val must be string, number or Buffer')
@@ -1476,7 +1464,7 @@ function hexSlice (buf, start, end) {
 
   var out = ''
   for (var i = start; i < end; ++i) {
-    out += hexSliceLookupTable[buf[i]]
+    out += toHex(buf[i])
   }
   return out
 }
@@ -1513,8 +1501,7 @@ Buffer.prototype.slice = function slice (start, end) {
 
   var newBuf = this.subarray(start, end)
   // Return an augmented `Uint8Array` instance
-  Object.setPrototypeOf(newBuf, Buffer.prototype)
-
+  newBuf.__proto__ = Buffer.prototype
   return newBuf
 }
 
@@ -2003,8 +1990,6 @@ Buffer.prototype.fill = function fill (val, start, end, encoding) {
     }
   } else if (typeof val === 'number') {
     val = val & 255
-  } else if (typeof val === 'boolean') {
-    val = Number(val)
   }
 
   // Invalid ranges are not set to a default, so can range check early.
@@ -2060,6 +2045,11 @@ function base64clean (str) {
     str = str + '='
   }
   return str
+}
+
+function toHex (n) {
+  if (n < 16) return '0' + n.toString(16)
+  return n.toString(16)
 }
 
 function utf8ToBytes (string, units) {
@@ -2192,22 +2182,8 @@ function numberIsNaN (obj) {
   return obj !== obj // eslint-disable-line no-self-compare
 }
 
-// Create lookup table for `toString('hex')`
-// See: https://github.com/feross/buffer/issues/219
-var hexSliceLookupTable = (function () {
-  var alphabet = '0123456789abcdef'
-  var table = new Array(256)
-  for (var i = 0; i < 16; ++i) {
-    var i16 = i * 16
-    for (var j = 0; j < 16; ++j) {
-      table[i16 + j] = alphabet[i] + alphabet[j]
-    }
-  }
-  return table
-})()
-
-}).call(this,require("buffer").Buffer)
-},{"base64-js":3,"buffer":4,"ieee754":18}],5:[function(require,module,exports){
+}).call(this)}).call(this,require("buffer").Buffer)
+},{"base64-js":3,"buffer":4,"ieee754":9}],5:[function(require,module,exports){
 /* eslint quote-props: off */
 'use strict'
 
@@ -2584,17 +2560,15 @@ module.exports = { names }
 },{}],6:[function(require,module,exports){
 /**
  * Multihash implementation in JavaScript.
- *
- * @module multihash
  */
 'use strict'
 
 const multibase = require('multibase')
 const varint = require('varint')
 const { names } = require('./constants')
-const uint8ArrayToString = require('uint8arrays/to-string')
-const uint8ArrayFromString = require('uint8arrays/from-string')
-const uint8ArrayConcat = require('uint8arrays/concat')
+const { toString: uint8ArrayToString } = require('uint8arrays/to-string')
+const { fromString: uint8ArrayFromString } = require('uint8arrays/from-string')
+const { concat: uint8ArrayConcat } = require('uint8arrays/concat')
 
 const codes = /** @type {import('./types').CodeNameMap} */({})
 
@@ -2603,6 +2577,7 @@ for (const key in names) {
   const name = /** @type {HashName} */(key)
   codes[names[name]] = name
 }
+Object.freeze(codes)
 
 /**
  * Convert the given multihash to a hex encoded string.
@@ -2813,7 +2788,7 @@ function prefix (multihash) {
 
 module.exports = {
   names,
-  codes: Object.freeze(codes),
+  codes,
   toHexString,
   fromHexString,
   toB58String,
@@ -2832,269 +2807,7 @@ module.exports = {
  * @typedef { import("./constants").HashName } HashName
  */
 
-},{"./constants":5,"multibase":23,"uint8arrays/concat":7,"uint8arrays/from-string":9,"uint8arrays/to-string":10,"varint":13}],7:[function(require,module,exports){
-'use strict'
-
-/**
- * Returns a new Uint8Array created by concatenating the passed ArrayLikes
- *
- * @param {Array<ArrayLike<number>>} arrays
- * @param {number} [length]
- */
-function concat (arrays, length) {
-  if (!length) {
-    length = arrays.reduce((acc, curr) => acc + curr.length, 0)
-  }
-
-  const output = new Uint8Array(length)
-  let offset = 0
-
-  for (const arr of arrays) {
-    output.set(arr, offset)
-    offset += arr.length
-  }
-
-  return output
-}
-
-module.exports = concat
-
-},{}],8:[function(require,module,exports){
-'use strict'
-
-/**
- * Returns true if the two passed Uint8Arrays have the same content
- *
- * @param {Uint8Array} a
- * @param {Uint8Array} b
- */
-function equals (a, b) {
-  if (a === b) {
-    return true
-  }
-
-  if (a.byteLength !== b.byteLength) {
-    return false
-  }
-
-  for (let i = 0; i < a.byteLength; i++) {
-    if (a[i] !== b[i]) {
-      return false
-    }
-  }
-
-  return true
-}
-
-module.exports = equals
-
-},{}],9:[function(require,module,exports){
-'use strict'
-
-const { encoding: getCodec } = require('multibase')
-const { TextEncoder } = require('web-encoding')
-const utf8Encoder = new TextEncoder()
-
-/**
- * @typedef {import('multibase/src/types').BaseName} BaseName
- */
-
-/**
- * Interprets each character in a string as a byte and
- * returns a Uint8Array of those bytes.
- *
- * @param {string} string - The string to turn into an array
- */
-function asciiStringToUint8Array (string) {
-  const array = new Uint8Array(string.length)
-
-  for (let i = 0; i < string.length; i++) {
-    array[i] = string.charCodeAt(i)
-  }
-
-  return array
-}
-
-/**
- * Create a `Uint8Array` from the passed string
- *
- * Supports `utf8`, `utf-8` and any encoding supported by the multibase module.
- *
- * Also `ascii` which is similar to node's 'binary' encoding.
- *
- * @param {string} string
- * @param {BaseName | 'utf8' | 'utf-8' | 'ascii'} [encoding=utf8] - utf8, base16, base64, base64urlpad, etc
- * @returns {Uint8Array}
- */
-function fromString (string, encoding = 'utf8') {
-  if (encoding === 'utf8' || encoding === 'utf-8') {
-    return utf8Encoder.encode(string)
-  }
-
-  if (encoding === 'ascii') {
-    return asciiStringToUint8Array(string)
-  }
-
-  return getCodec(encoding).decode(string)
-}
-
-module.exports = fromString
-
-},{"multibase":23,"web-encoding":15}],10:[function(require,module,exports){
-'use strict'
-
-const { encoding: getCodec } = require('multibase')
-const { TextDecoder } = require('web-encoding')
-const utf8Decoder = new TextDecoder('utf8')
-
-/**
- * @typedef {import('multibase/src/types').BaseName} BaseName
- */
-
-/**
- * Turns a Uint8Array of bytes into a string with each
- * character being the char code of the corresponding byte
- *
- * @param {Uint8Array} array - The array to turn into a string
- */
-function uint8ArrayToAsciiString (array) {
-  let string = ''
-
-  for (let i = 0; i < array.length; i++) {
-    string += String.fromCharCode(array[i])
-  }
-  return string
-}
-
-/**
- * Turns a `Uint8Array` into a string.
- *
- * Supports `utf8`, `utf-8` and any encoding supported by the multibase module.
- *
- * Also `ascii` which is similar to node's 'binary' encoding.
- *
- * @param {Uint8Array} array - The array to turn into a string
- * @param {BaseName | 'utf8' | 'utf-8' | 'ascii'} [encoding=utf8] - The encoding to use
- * @returns {string}
- */
-function toString (array, encoding = 'utf8') {
-  if (encoding === 'utf8' || encoding === 'utf-8') {
-    return utf8Decoder.decode(array)
-  }
-
-  if (encoding === 'ascii') {
-    return uint8ArrayToAsciiString(array)
-  }
-
-  return getCodec(encoding).encode(array)
-}
-
-module.exports = toString
-
-},{"multibase":23,"web-encoding":15}],11:[function(require,module,exports){
-module.exports = read
-
-var MSB = 0x80
-  , REST = 0x7F
-
-function read(buf, offset) {
-  var res    = 0
-    , offset = offset || 0
-    , shift  = 0
-    , counter = offset
-    , b
-    , l = buf.length
-
-  do {
-    if (counter >= l || shift > 49) {
-      read.bytes = 0
-      throw new RangeError('Could not decode varint')
-    }
-    b = buf[counter++]
-    res += shift < 28
-      ? (b & REST) << shift
-      : (b & REST) * Math.pow(2, shift)
-    shift += 7
-  } while (b >= MSB)
-
-  read.bytes = counter - offset
-
-  return res
-}
-
-},{}],12:[function(require,module,exports){
-module.exports = encode
-
-var MSB = 0x80
-  , REST = 0x7F
-  , MSBALL = ~REST
-  , INT = Math.pow(2, 31)
-
-function encode(num, out, offset) {
-  if (Number.MAX_SAFE_INTEGER && num > Number.MAX_SAFE_INTEGER) {
-    encode.bytes = 0
-    throw new RangeError('Could not encode varint')
-  }
-  out = out || []
-  offset = offset || 0
-  var oldOffset = offset
-
-  while(num >= INT) {
-    out[offset++] = (num & 0xFF) | MSB
-    num /= 128
-  }
-  while(num & MSBALL) {
-    out[offset++] = (num & 0xFF) | MSB
-    num >>>= 7
-  }
-  out[offset] = num | 0
-  
-  encode.bytes = offset - oldOffset + 1
-  
-  return out
-}
-
-},{}],13:[function(require,module,exports){
-module.exports = {
-    encode: require('./encode.js')
-  , decode: require('./decode.js')
-  , encodingLength: require('./length.js')
-}
-
-},{"./decode.js":11,"./encode.js":12,"./length.js":14}],14:[function(require,module,exports){
-
-var N1 = Math.pow(2,  7)
-var N2 = Math.pow(2, 14)
-var N3 = Math.pow(2, 21)
-var N4 = Math.pow(2, 28)
-var N5 = Math.pow(2, 35)
-var N6 = Math.pow(2, 42)
-var N7 = Math.pow(2, 49)
-var N8 = Math.pow(2, 56)
-var N9 = Math.pow(2, 63)
-
-module.exports = function (value) {
-  return (
-    value < N1 ? 1
-  : value < N2 ? 2
-  : value < N3 ? 3
-  : value < N4 ? 4
-  : value < N5 ? 5
-  : value < N6 ? 6
-  : value < N7 ? 7
-  : value < N8 ? 8
-  : value < N9 ? 9
-  :              10
-  )
-}
-
-},{}],15:[function(require,module,exports){
-"use strict"
-
-exports.TextEncoder = TextEncoder
-exports.TextDecoder = TextDecoder
-
-},{}],16:[function(require,module,exports){
+},{"./constants":5,"multibase":13,"uint8arrays/concat":56,"uint8arrays/from-string":58,"uint8arrays/to-string":59,"varint":66}],7:[function(require,module,exports){
 'use strict'
 
 const mh = require('multihashes')
@@ -3148,22 +2861,22 @@ const CIDUtil = {
 
 module.exports = CIDUtil
 
-},{"multihashes":6}],17:[function(require,module,exports){
+},{"multihashes":6}],8:[function(require,module,exports){
 'use strict'
 
 const mh = require('multihashes')
 const multibase = require('multibase')
 const multicodec = require('multicodec')
-const { baseTable: codecs } = require('multicodec/src/base-table.js')
 const CIDUtil = require('./cid-util')
-const uint8ArrayConcat = require('uint8arrays/concat')
-const uint8ArrayToString = require('uint8arrays/to-string')
-const uint8ArrayEquals = require('uint8arrays/equals')
+const { concat: uint8ArrayConcat } = require('uint8arrays/concat')
+const { toString: uint8ArrayToString } = require('uint8arrays/to-string')
+const { equals: uint8ArrayEquals } = require('uint8arrays/equals')
 
+const codecs = multicodec.nameToCode
 const codecInts = /** @type {CodecName[]} */(Object.keys(codecs)).reduce((p, name) => {
   p[codecs[name]] = name
   return p
-}, /** @type {Record<CodecNumber, CodecName>} */({}))
+}, /** @type {Record<CodecCode, CodecName>} */({}))
 
 const symbol = Symbol.for('@ipld/js-cid/CID')
 
@@ -3177,7 +2890,7 @@ const symbol = Symbol.for('@ipld/js-cid/CID')
  * @typedef {0|1} CIDVersion
  * @typedef {import('multibase').BaseNameOrCode} BaseNameOrCode
  * @typedef {import('multicodec').CodecName} CodecName
- * @typedef {import('multicodec').CodecNumber} CodecNumber
+ * @typedef {import('multicodec').CodecCode} CodecCode
  */
 
 /**
@@ -3372,7 +3085,7 @@ class CID {
   /**
    * The codec of the CID in its number form.
    *
-   * @returns {CodecNumber}
+   * @returns {CodecCode}
    */
   get code () {
     return codecs[this.codec]
@@ -3407,7 +3120,7 @@ class CID {
    * @returns {CID}
    */
   toV1 () {
-    return new CID(1, this.codec, this.multihash)
+    return new CID(1, this.codec, this.multihash, this.multibaseName)
   }
 
   /**
@@ -3513,7 +3226,8 @@ CID.codecs = codecs
 
 module.exports = CID
 
-},{"./cid-util":16,"multibase":23,"multicodec":32,"multicodec/src/base-table.js":30,"multihashes":6,"uint8arrays/concat":7,"uint8arrays/equals":8,"uint8arrays/to-string":10}],18:[function(require,module,exports){
+},{"./cid-util":7,"multibase":13,"multicodec":21,"multihashes":6,"uint8arrays/concat":56,"uint8arrays/equals":57,"uint8arrays/to-string":59}],9:[function(require,module,exports){
+/*! ieee754. BSD-3-Clause License. Feross Aboukhadijeh <https://feross.org/opensource> */
 exports.read = function (buffer, offset, isLE, mLen, nBytes) {
   var e, m
   var eLen = (nBytes * 8) - mLen - 1
@@ -3599,8 +3313,8 @@ exports.write = function (buffer, value, offset, isLE, mLen, nBytes) {
   buffer[offset + i - d] |= s * 128
 }
 
-},{}],19:[function(require,module,exports){
-(function (global,Buffer){
+},{}],10:[function(require,module,exports){
+(function (global,Buffer){(function (){
 
 
 //
@@ -3643,7 +3357,7 @@ exports.write = function (buffer, value, offset, isLE, mLen, nBytes) {
  *
  * @author Dan Kogai (https://github.com/dankogai)
  */
-const version = '3.6.0';
+const version = '3.6.1';
 /**
  * @deprecated use lowercase `version`.
  */
@@ -3919,10 +3633,8 @@ const gBase64 = {
 
 
 
-}).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {},require("buffer").Buffer)
-},{"buffer":4}],20:[function(require,module,exports){
-arguments[4][15][0].apply(exports,arguments)
-},{"dup":15}],21:[function(require,module,exports){
+}).call(this)}).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {},require("buffer").Buffer)
+},{"buffer":4}],11:[function(require,module,exports){
 'use strict'
 
 const { encodeText } = require('./util')
@@ -3974,7 +3686,7 @@ class Base {
 
 module.exports = Base
 
-},{"./util":25}],22:[function(require,module,exports){
+},{"./util":15}],12:[function(require,module,exports){
 'use strict'
 
 const baseX = require('@multiformats/base-x')
@@ -4044,7 +3756,7 @@ module.exports = {
   codes
 }
 
-},{"./base.js":21,"./rfc4648":24,"./util":25,"@multiformats/base-x":1}],23:[function(require,module,exports){
+},{"./base.js":11,"./rfc4648":14,"./util":15,"@multiformats/base-x":1}],13:[function(require,module,exports){
 /**
  * Implementation of the [multibase](https://github.com/multiformats/multibase) specification.
  *
@@ -4120,7 +3832,6 @@ function decode (data) {
  * Is the given data multibase encoded?
  *
  * @param {Uint8Array|string} data
- * @returns {false | string}
  */
 function isEncoded (data) {
   if (data instanceof Uint8Array) {
@@ -4161,9 +3872,9 @@ function validEncode (name, buf) {
  * @throws {Error} Will throw if the encoding is not supported
  */
 function encoding (nameOrCode) {
-  if (constants.names[/** @type {BaseName} */(nameOrCode)]) {
+  if (Object.prototype.hasOwnProperty.call(constants.names, /** @type {BaseName} */(nameOrCode))) {
     return constants.names[/** @type {BaseName} */(nameOrCode)]
-  } else if (constants.codes[/** @type {BaseCode} */(nameOrCode)]) {
+  } else if (Object.prototype.hasOwnProperty.call(constants.codes, /** @type {BaseCode} */(nameOrCode))) {
     return constants.codes[/** @type {BaseCode} */(nameOrCode)]
   } else {
     throw new Error(`Unsupported encoding: ${nameOrCode}`)
@@ -4191,10 +3902,12 @@ exports.decode = decode
 exports.isEncoded = isEncoded
 exports.encoding = encoding
 exports.encodingFromData = encodingFromData
-exports.names = Object.freeze(constants.names)
-exports.codes = Object.freeze(constants.codes)
+const names = Object.freeze(constants.names)
+const codes = Object.freeze(constants.codes)
+exports.names = names
+exports.codes = codes
 
-},{"./constants":22,"./util":25}],24:[function(require,module,exports){
+},{"./constants":12,"./util":15}],14:[function(require,module,exports){
 'use strict'
 
 /** @typedef {import('./types').CodecFactory} CodecFactory */
@@ -4319,11 +4032,8 @@ const rfc4648 = (bitsPerChar) => (alphabet) => {
 
 module.exports = { rfc4648 }
 
-},{}],25:[function(require,module,exports){
+},{}],15:[function(require,module,exports){
 'use strict'
-
-// @ts-ignore
-const { TextEncoder, TextDecoder } = require('web-encoding')
 
 const textDecoder = new TextDecoder()
 /**
@@ -4360,21 +4070,110 @@ function concat (arrs, length) {
 
 module.exports = { decodeText, encodeText, concat }
 
-},{"web-encoding":20}],26:[function(require,module,exports){
-arguments[4][11][0].apply(exports,arguments)
-},{"dup":11}],27:[function(require,module,exports){
-arguments[4][12][0].apply(exports,arguments)
-},{"dup":12}],28:[function(require,module,exports){
-arguments[4][13][0].apply(exports,arguments)
-},{"./decode.js":26,"./encode.js":27,"./length.js":29,"dup":13}],29:[function(require,module,exports){
-arguments[4][14][0].apply(exports,arguments)
-},{"dup":14}],30:[function(require,module,exports){
+},{}],16:[function(require,module,exports){
+module.exports = read
+
+var MSB = 0x80
+  , REST = 0x7F
+
+function read(buf, offset) {
+  var res    = 0
+    , offset = offset || 0
+    , shift  = 0
+    , counter = offset
+    , b
+    , l = buf.length
+
+  do {
+    if (counter >= l || shift > 49) {
+      read.bytes = 0
+      throw new RangeError('Could not decode varint')
+    }
+    b = buf[counter++]
+    res += shift < 28
+      ? (b & REST) << shift
+      : (b & REST) * Math.pow(2, shift)
+    shift += 7
+  } while (b >= MSB)
+
+  read.bytes = counter - offset
+
+  return res
+}
+
+},{}],17:[function(require,module,exports){
+module.exports = encode
+
+var MSB = 0x80
+  , REST = 0x7F
+  , MSBALL = ~REST
+  , INT = Math.pow(2, 31)
+
+function encode(num, out, offset) {
+  if (Number.MAX_SAFE_INTEGER && num > Number.MAX_SAFE_INTEGER) {
+    encode.bytes = 0
+    throw new RangeError('Could not encode varint')
+  }
+  out = out || []
+  offset = offset || 0
+  var oldOffset = offset
+
+  while(num >= INT) {
+    out[offset++] = (num & 0xFF) | MSB
+    num /= 128
+  }
+  while(num & MSBALL) {
+    out[offset++] = (num & 0xFF) | MSB
+    num >>>= 7
+  }
+  out[offset] = num | 0
+  
+  encode.bytes = offset - oldOffset + 1
+  
+  return out
+}
+
+},{}],18:[function(require,module,exports){
+module.exports = {
+    encode: require('./encode.js')
+  , decode: require('./decode.js')
+  , encodingLength: require('./length.js')
+}
+
+},{"./decode.js":16,"./encode.js":17,"./length.js":19}],19:[function(require,module,exports){
+
+var N1 = Math.pow(2,  7)
+var N2 = Math.pow(2, 14)
+var N3 = Math.pow(2, 21)
+var N4 = Math.pow(2, 28)
+var N5 = Math.pow(2, 35)
+var N6 = Math.pow(2, 42)
+var N7 = Math.pow(2, 49)
+var N8 = Math.pow(2, 56)
+var N9 = Math.pow(2, 63)
+
+module.exports = function (value) {
+  return (
+    value < N1 ? 1
+  : value < N2 ? 2
+  : value < N3 ? 3
+  : value < N4 ? 4
+  : value < N5 ? 5
+  : value < N6 ? 6
+  : value < N7 ? 7
+  : value < N8 ? 8
+  : value < N9 ? 9
+  :              10
+  )
+}
+
+},{}],20:[function(require,module,exports){
 // DO NOT CHANGE THIS FILE. IT IS GENERATED BY tools/update-table.js
 /* eslint quote-props: off */
 'use strict'
 
 /**
- * @type {import('./generated-types').NameNumberMap}
+ * @type {import('./generated-types').NameCodeMap}
  */
 const baseTable = Object.freeze({
   'identity': 0x00,
@@ -4438,12 +4237,15 @@ const baseTable = Object.freeze({
   'eth-state-trie': 0x96,
   'eth-account-snapshot': 0x97,
   'eth-storage-trie': 0x98,
+  'eth-receipt-log-trie': 0x99,
+  'eth-reciept-log': 0x9a,
   'bitcoin-block': 0xb0,
   'bitcoin-tx': 0xb1,
   'bitcoin-witness-commitment': 0xb2,
   'zcash-block': 0xc0,
   'zcash-tx': 0xc1,
-  'docid': 0xce,
+  'caip-50': 0xca,
+  'streamid': 0xce,
   'stellar-block': 0xd0,
   'stellar-tx': 0xd1,
   'md4': 0xd4,
@@ -4475,6 +4277,7 @@ const baseTable = Object.freeze({
   'udt': 0x012d,
   'utp': 0x012e,
   'unix': 0x0190,
+  'thread': 0x0196,
   'p2p': 0x01a5,
   'ipfs': 0x01a5,
   'https': 0x01bb,
@@ -4483,14 +4286,18 @@ const baseTable = Object.freeze({
   'garlic64': 0x01be,
   'garlic32': 0x01bf,
   'tls': 0x01c0,
+  'noise': 0x01c6,
   'quic': 0x01cc,
   'ws': 0x01dd,
   'wss': 0x01de,
   'p2p-websocket-star': 0x01df,
   'http': 0x01e0,
+  'swhid-1-snp': 0x01f0,
   'json': 0x0200,
   'messagepack': 0x0201,
   'libp2p-peer-record': 0x0301,
+  'libp2p-relay-rsvp': 0x0302,
+  'car-index-sorted': 0x0400,
   'sha2-256-trunc254-padded': 0x1012,
   'ripemd-128': 0x1052,
   'ripemd-160': 0x1053,
@@ -4503,6 +4310,8 @@ const baseTable = Object.freeze({
   'ed448-pub': 0x1203,
   'x448-pub': 0x1204,
   'ed25519-priv': 0x1300,
+  'secp256k1-priv': 0x1301,
+  'x25519-priv': 0x1302,
   'kangarootwelve': 0x1d01,
   'sm3-256': 0x534d,
   'blake2b-8': 0xb201,
@@ -4836,28 +4645,13 @@ const baseTable = Object.freeze({
   'holochain-key-v1': 0x957124,
   'holochain-sig-v0': 0xa27124,
   'holochain-sig-v1': 0xa37124,
-  'skynet-ns': 0xb19910
+  'skynet-ns': 0xb19910,
+  'arweave-ns': 0xb29910
 })
 
 module.exports = { baseTable }
 
-},{}],31:[function(require,module,exports){
-'use strict'
-
-/** @typedef {import('./generated-types').ConstantNumberMap} ConstantNumberMap */
-
-const { baseTable } = require('./base-table')
-
-const constants = /** @type {ConstantNumberMap} */({})
-
-for (const [name, code] of Object.entries(baseTable)) {
-  const constant = name.toUpperCase().replace(/-/g, '_')
-  constants[constant] = code
-}
-
-module.exports = Object.freeze(constants)
-
-},{"./base-table":30}],32:[function(require,module,exports){
+},{}],21:[function(require,module,exports){
 /**
  * Implementation of the multicodec specification.
  *
@@ -4872,13 +4666,12 @@ module.exports = Object.freeze(constants)
 'use strict'
 
 /** @typedef {import('./generated-types').CodecName} CodecName */
-/** @typedef {import('./generated-types').CodecNumber} CodecNumber */
+/** @typedef {import('./generated-types').CodecCode} CodecCode */
 
 const varint = require('varint')
-const intTable = require('./int-table')
-const codecNameToCodeVarint = require('./varint-table')
+const { concat: uint8ArrayConcat } = require('uint8arrays/concat')
 const util = require('./util')
-const uint8ArrayConcat = require('uint8arrays/concat')
+const { nameToVarint, constantToCode, nameToCode, codeToName } = require('./maps')
 
 /**
  * Prefix a buffer with a multicodec-packed.
@@ -4893,12 +4686,13 @@ function addPrefix (multicodecStrOrCode, data) {
   if (multicodecStrOrCode instanceof Uint8Array) {
     prefix = util.varintUint8ArrayEncode(multicodecStrOrCode)
   } else {
-    if (codecNameToCodeVarint[multicodecStrOrCode]) {
-      prefix = codecNameToCodeVarint[multicodecStrOrCode]
+    if (nameToVarint[multicodecStrOrCode]) {
+      prefix = nameToVarint[multicodecStrOrCode]
     } else {
       throw new Error('multicodec not recognized')
     }
   }
+
   return uint8ArrayConcat([prefix, data], prefix.length + data.length)
 }
 
@@ -4909,69 +4703,69 @@ function addPrefix (multicodecStrOrCode, data) {
  * @returns {Uint8Array}
  */
 function rmPrefix (data) {
-  varint.decode(data)
+  varint.decode(/** @type {Buffer} */(data))
   return data.slice(varint.decode.bytes)
 }
 
 /**
- * Get the codec of the prefixed data.
+ * Get the codec name of the prefixed data.
  *
  * @param {Uint8Array} prefixedData
  * @returns {CodecName}
  */
-function getCodec (prefixedData) {
-  const code = varint.decode(prefixedData)
-  const codecName = intTable.get(code)
-  if (codecName === undefined) {
-    throw new Error(`Code ${code} not found`)
+function getNameFromData (prefixedData) {
+  const code = /** @type {CodecCode} */(varint.decode(/** @type {Buffer} */(prefixedData)))
+  const name = codeToName[code]
+  if (name === undefined) {
+    throw new Error(`Code "${code}" not found`)
   }
-  return codecName
+  return name
 }
 
 /**
- * Get the name of the codec.
+ * Get the codec name from a code.
  *
- * @param {CodecNumber} codec
- * @returns {CodecName|undefined}
+ * @param {CodecCode} codec
+ * @returns {CodecName}
  */
-function getName (codec) {
-  return intTable.get(codec)
+function getNameFromCode (codec) {
+  return codeToName[codec]
 }
 
 /**
  * Get the code of the codec
  *
  * @param {CodecName} name
- * @returns {CodecNumber}
+ * @returns {CodecCode}
  */
-function getNumber (name) {
-  const code = codecNameToCodeVarint[name]
+function getCodeFromName (name) {
+  const code = nameToCode[name]
   if (code === undefined) {
-    throw new Error('Codec `' + name + '` not found')
+    throw new Error(`Codec "${name}" not found`)
   }
-  return varint.decode(code)
+  return code
 }
 
 /**
  * Get the code of the prefixed data.
  *
  * @param {Uint8Array} prefixedData
- * @returns {CodecNumber}
+ * @returns {CodecCode}
  */
-function getCode (prefixedData) {
-  return varint.decode(prefixedData)
+function getCodeFromData (prefixedData) {
+  return /** @type {CodecCode} */(varint.decode(/** @type {Buffer} */(prefixedData)))
 }
 
 /**
  * Get the code as varint of a codec name.
  *
- * @param {CodecName} codecName
+ * @param {CodecName} name
  * @returns {Uint8Array}
  */
-function getCodeVarint (codecName) {
-  const code = codecNameToCodeVarint[codecName]
+function getVarintFromName (name) {
+  const code = nameToVarint[name]
   if (code === undefined) {
-    throw new Error('Codec `' + codecName + '` not found')
+    throw new Error(`Codec "${name}" not found`)
   }
   return code
 }
@@ -4979,76 +4773,150 @@ function getCodeVarint (codecName) {
 /**
  * Get the varint of a code.
  *
- * @param {CodecNumber} code
+ * @param {CodecCode} code
+ * @returns {Uint8Array}
+ */
+function getVarintFromCode (code) {
+  return util.varintEncode(code)
+}
+
+/**
+ * Get the codec name of the prefixed data.
+ *
+ * @deprecated use getNameFromData instead.
+ * @param {Uint8Array} prefixedData
+ * @returns {CodecName}
+ */
+function getCodec (prefixedData) {
+  return getNameFromData(prefixedData)
+}
+
+/**
+ * Get the codec name from a code.
+ *
+ * @deprecated use getNameFromCode instead.
+ * @param {CodecCode} codec
+ * @returns {CodecName}
+ */
+function getName (codec) {
+  return getNameFromCode(codec)
+}
+
+/**
+ * Get the code of the codec
+ *
+ * @deprecated use getCodeFromName instead.
+ * @param {CodecName} name
+ * @returns {CodecCode}
+ */
+function getNumber (name) {
+  return getCodeFromName(name)
+}
+
+/**
+ * Get the code of the prefixed data.
+ *
+ * @deprecated use getCodeFromData instead.
+ * @param {Uint8Array} prefixedData
+ * @returns {CodecCode}
+ */
+function getCode (prefixedData) {
+  return getCodeFromData(prefixedData)
+}
+
+/**
+ * Get the code as varint of a codec name.
+ *
+ * @deprecated use getVarintFromName instead.
+ * @param {CodecName} name
+ * @returns {Uint8Array}
+ */
+function getCodeVarint (name) {
+  return getVarintFromName(name)
+}
+
+/**
+ * Get the varint of a code.
+ *
+ * @deprecated use getVarintFromCode instead.
+ * @param {CodecCode} code
  * @returns {Array.<number>}
  */
 function getVarint (code) {
-  return varint.encode(code)
+  return Array.from(getVarintFromCode(code))
 }
-
-// Make the constants top-level constants
-const constants = require('./constants')
-
-// Human friendly names for printing, e.g. in error messages
-const print = require('./print')
 
 module.exports = {
   addPrefix,
   rmPrefix,
+  getNameFromData,
+  getNameFromCode,
+  getCodeFromName,
+  getCodeFromData,
+  getVarintFromName,
+  getVarintFromCode,
+  // Deprecated
   getCodec,
   getName,
   getNumber,
   getCode,
   getCodeVarint,
   getVarint,
-  print,
-  ...constants
+  // Make the constants top-level constants
+  ...constantToCode,
+  // Export the maps
+  nameToVarint,
+  nameToCode,
+  codeToName
 }
 
-},{"./constants":31,"./int-table":33,"./print":34,"./util":35,"./varint-table":36,"uint8arrays/concat":45,"varint":28}],33:[function(require,module,exports){
+},{"./maps":22,"./util":23,"uint8arrays/concat":56,"varint":18}],22:[function(require,module,exports){
 'use strict'
 
+/** @typedef {import('./generated-types').ConstantCodeMap} ConstantCodeMap */
+/** @typedef {import('./generated-types').NameUint8ArrayMap} NameUint8ArrayMap */
+/** @typedef {import('./generated-types').CodeNameMap} CodeNameMap */
 /** @typedef {import('./generated-types').CodecName} CodecName */
-/** @typedef {import('./generated-types').CodecNumber} CodecNumber */
+/** @typedef {import('./generated-types').CodecConstant} CodecConstant */
 
-const { baseTable } = require('./base-table')
+const { baseTable } = require('./generated-table')
+const varintEncode = require('./util').varintEncode
 
-/**
- * @type {Map<CodecNumber,CodecName>}
- */
-const nameTable = new Map()
+const nameToVarint = /** @type {NameUint8ArrayMap} */ ({})
+const constantToCode = /** @type {ConstantCodeMap} */({})
+const codeToName = /** @type {CodeNameMap} */({})
 
-for (const encodingName in baseTable) {
-  const code = baseTable[encodingName]
-  nameTable.set(code, /** @type {CodecName} */(encodingName))
-}
+// eslint-disable-next-line guard-for-in
+for (const name in baseTable) {
+  const codecName = /** @type {CodecName} */(name)
+  const code = baseTable[codecName]
+  nameToVarint[codecName] = varintEncode(code)
 
-module.exports = Object.freeze(nameTable)
+  const constant = /** @type {CodecConstant} */(codecName.toUpperCase().replace(/-/g, '_'))
+  constantToCode[constant] = code
 
-},{"./base-table":30}],34:[function(require,module,exports){
-'use strict'
-
-/** @typedef {import('./generated-types').CodecName} CodecName */
-/** @typedef {import('./generated-types').NumberNameMap} NumberNameMap */
-
-const { baseTable } = require('./base-table')
-
-const tableByCode = /** @type {NumberNameMap} */({})
-
-for (const [name, code] of Object.entries(baseTable)) {
-  if (tableByCode[code] === undefined) {
-    tableByCode[code] = /** @type {CodecName} **/(name)
+  if (!codeToName[code]) {
+    codeToName[code] = codecName
   }
 }
 
-module.exports = /** @type {NumberNameMap} */(Object.freeze(tableByCode))
+Object.freeze(nameToVarint)
+Object.freeze(constantToCode)
+Object.freeze(codeToName)
+const nameToCode = Object.freeze(baseTable)
+module.exports = {
+  nameToVarint,
+  constantToCode,
+  nameToCode,
+  codeToName
+}
 
-},{"./base-table":30}],35:[function(require,module,exports){
+},{"./generated-table":20,"./util":23}],23:[function(require,module,exports){
 'use strict'
 
 const varint = require('varint')
-const uint8ArrayToString = require('uint8arrays/to-string')
-const uint8ArrayFromString = require('uint8arrays/from-string')
+const { toString: uint8ArrayToString } = require('uint8arrays/to-string')
+const { fromString: uint8ArrayFromString } = require('uint8arrays/from-string')
 
 module.exports = {
   numberToUint8Array,
@@ -5057,10 +4925,16 @@ module.exports = {
   varintEncode
 }
 
+/**
+ * @param {Uint8Array} buf
+ */
 function uint8ArrayToNumber (buf) {
   return parseInt(uint8ArrayToString(buf, 'base16'), 16)
 }
 
+/**
+ * @param {number} num
+ */
 function numberToUint8Array (num) {
   let hexString = num.toString(16)
   if (hexString.length % 2 === 1) {
@@ -5069,32 +4943,1239 @@ function numberToUint8Array (num) {
   return uint8ArrayFromString(hexString, 'base16')
 }
 
+/**
+ * @param {Uint8Array} input
+ */
 function varintUint8ArrayEncode (input) {
   return Uint8Array.from(varint.encode(uint8ArrayToNumber(input)))
 }
 
+/**
+ * @param {number} num
+ */
 function varintEncode (num) {
   return Uint8Array.from(varint.encode(num))
 }
 
-},{"uint8arrays/from-string":46,"uint8arrays/to-string":51,"varint":28}],36:[function(require,module,exports){
-'use strict'
+},{"uint8arrays/from-string":58,"uint8arrays/to-string":59,"varint":18}],24:[function(require,module,exports){
+'use strict';
 
-/** @typedef {import('./generated-types').NameUint8ArrayMap} NameUint8ArrayMap */
+Object.defineProperty(exports, '__esModule', { value: true });
 
-const { baseTable } = require('./base-table')
-const varintEncode = require('./util').varintEncode
+var baseX$1 = require('../../vendor/base-x.js');
+var bytes = require('../bytes.js');
 
-const varintTable = /** @type {NameUint8ArrayMap} */ ({})
+class Encoder {
+  constructor(name, prefix, baseEncode) {
+    this.name = name;
+    this.prefix = prefix;
+    this.baseEncode = baseEncode;
+  }
+  encode(bytes) {
+    if (bytes instanceof Uint8Array) {
+      return `${ this.prefix }${ this.baseEncode(bytes) }`;
+    } else {
+      throw Error('Unknown type, must be binary type');
+    }
+  }
+}
+class Decoder {
+  constructor(name, prefix, baseDecode) {
+    this.name = name;
+    this.prefix = prefix;
+    this.baseDecode = baseDecode;
+  }
+  decode(text) {
+    if (typeof text === 'string') {
+      switch (text[0]) {
+      case this.prefix: {
+          return this.baseDecode(text.slice(1));
+        }
+      default: {
+          throw Error(`Unable to decode multibase string ${ JSON.stringify(text) }, ${ this.name } decoder only supports inputs prefixed with ${ this.prefix }`);
+        }
+      }
+    } else {
+      throw Error('Can only multibase decode strings');
+    }
+  }
+  or(decoder) {
+    const decoders = {
+      [this.prefix]: this,
+      ...decoder.decoders || { [decoder.prefix]: decoder }
+    };
+    return new ComposedDecoder(decoders);
+  }
+}
+class ComposedDecoder {
+  constructor(decoders) {
+    this.decoders = decoders;
+  }
+  or(decoder) {
+    const other = decoder.decoders || { [decoder.prefix]: decoder };
+    return new ComposedDecoder({
+      ...this.decoders,
+      ...other
+    });
+  }
+  decode(input) {
+    const prefix = input[0];
+    const decoder = this.decoders[prefix];
+    if (decoder) {
+      return decoder.decode(input);
+    } else {
+      throw RangeError(`Unable to decode multibase string ${ JSON.stringify(input) }, only inputs prefixed with ${ Object.keys(this.decoders) } are supported`);
+    }
+  }
+}
+class Codec {
+  constructor(name, prefix, baseEncode, baseDecode) {
+    this.name = name;
+    this.prefix = prefix;
+    this.baseEncode = baseEncode;
+    this.baseDecode = baseDecode;
+    this.encoder = new Encoder(name, prefix, baseEncode);
+    this.decoder = new Decoder(name, prefix, baseDecode);
+  }
+  encode(input) {
+    return this.encoder.encode(input);
+  }
+  decode(input) {
+    return this.decoder.decode(input);
+  }
+}
+const from = ({name, prefix, encode, decode}) => new Codec(name, prefix, encode, decode);
+const baseX = ({prefix, name, alphabet}) => {
+  const {encode, decode} = baseX$1(alphabet, name);
+  return from({
+    prefix,
+    name,
+    encode,
+    decode: text => bytes.coerce(decode(text))
+  });
+};
+const decode = (string, alphabet, bitsPerChar, name) => {
+  const codes = {};
+  for (let i = 0; i < alphabet.length; ++i) {
+    codes[alphabet[i]] = i;
+  }
+  let end = string.length;
+  while (string[end - 1] === '=') {
+    --end;
+  }
+  const out = new Uint8Array(end * bitsPerChar / 8 | 0);
+  let bits = 0;
+  let buffer = 0;
+  let written = 0;
+  for (let i = 0; i < end; ++i) {
+    const value = codes[string[i]];
+    if (value === undefined) {
+      throw new SyntaxError(`Non-${ name } character`);
+    }
+    buffer = buffer << bitsPerChar | value;
+    bits += bitsPerChar;
+    if (bits >= 8) {
+      bits -= 8;
+      out[written++] = 255 & buffer >> bits;
+    }
+  }
+  if (bits >= bitsPerChar || 255 & buffer << 8 - bits) {
+    throw new SyntaxError('Unexpected end of data');
+  }
+  return out;
+};
+const encode = (data, alphabet, bitsPerChar) => {
+  const pad = alphabet[alphabet.length - 1] === '=';
+  const mask = (1 << bitsPerChar) - 1;
+  let out = '';
+  let bits = 0;
+  let buffer = 0;
+  for (let i = 0; i < data.length; ++i) {
+    buffer = buffer << 8 | data[i];
+    bits += 8;
+    while (bits > bitsPerChar) {
+      bits -= bitsPerChar;
+      out += alphabet[mask & buffer >> bits];
+    }
+  }
+  if (bits) {
+    out += alphabet[mask & buffer << bitsPerChar - bits];
+  }
+  if (pad) {
+    while (out.length * bitsPerChar & 7) {
+      out += '=';
+    }
+  }
+  return out;
+};
+const rfc4648 = ({name, prefix, bitsPerChar, alphabet}) => {
+  return from({
+    prefix,
+    name,
+    encode(input) {
+      return encode(input, alphabet, bitsPerChar);
+    },
+    decode(input) {
+      return decode(input, alphabet, bitsPerChar, name);
+    }
+  });
+};
 
-for (const encodingName in baseTable) {
-  const code = baseTable[encodingName]
-  varintTable[encodingName] = varintEncode(code)
+exports.Codec = Codec;
+exports.baseX = baseX;
+exports.from = from;
+exports.rfc4648 = rfc4648;
+
+},{"../../vendor/base-x.js":45,"../bytes.js":35}],25:[function(require,module,exports){
+'use strict';
+
+Object.defineProperty(exports, '__esModule', { value: true });
+
+var base = require('./base.js');
+
+const base10 = base.baseX({
+  prefix: '9',
+  name: 'base10',
+  alphabet: '0123456789'
+});
+
+exports.base10 = base10;
+
+},{"./base.js":24}],26:[function(require,module,exports){
+'use strict';
+
+Object.defineProperty(exports, '__esModule', { value: true });
+
+var base = require('./base.js');
+
+const base16 = base.rfc4648({
+  prefix: 'f',
+  name: 'base16',
+  alphabet: '0123456789abcdef',
+  bitsPerChar: 4
+});
+const base16upper = base.rfc4648({
+  prefix: 'F',
+  name: 'base16upper',
+  alphabet: '0123456789ABCDEF',
+  bitsPerChar: 4
+});
+
+exports.base16 = base16;
+exports.base16upper = base16upper;
+
+},{"./base.js":24}],27:[function(require,module,exports){
+'use strict';
+
+Object.defineProperty(exports, '__esModule', { value: true });
+
+var base = require('./base.js');
+
+const base2 = base.rfc4648({
+  prefix: '0',
+  name: 'base2',
+  alphabet: '01',
+  bitsPerChar: 1
+});
+
+exports.base2 = base2;
+
+},{"./base.js":24}],28:[function(require,module,exports){
+'use strict';
+
+Object.defineProperty(exports, '__esModule', { value: true });
+
+var base = require('./base.js');
+
+const base32 = base.rfc4648({
+  prefix: 'b',
+  name: 'base32',
+  alphabet: 'abcdefghijklmnopqrstuvwxyz234567',
+  bitsPerChar: 5
+});
+const base32upper = base.rfc4648({
+  prefix: 'B',
+  name: 'base32upper',
+  alphabet: 'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567',
+  bitsPerChar: 5
+});
+const base32pad = base.rfc4648({
+  prefix: 'c',
+  name: 'base32pad',
+  alphabet: 'abcdefghijklmnopqrstuvwxyz234567=',
+  bitsPerChar: 5
+});
+const base32padupper = base.rfc4648({
+  prefix: 'C',
+  name: 'base32padupper',
+  alphabet: 'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567=',
+  bitsPerChar: 5
+});
+const base32hex = base.rfc4648({
+  prefix: 'v',
+  name: 'base32hex',
+  alphabet: '0123456789abcdefghijklmnopqrstuv',
+  bitsPerChar: 5
+});
+const base32hexupper = base.rfc4648({
+  prefix: 'V',
+  name: 'base32hexupper',
+  alphabet: '0123456789ABCDEFGHIJKLMNOPQRSTUV',
+  bitsPerChar: 5
+});
+const base32hexpad = base.rfc4648({
+  prefix: 't',
+  name: 'base32hexpad',
+  alphabet: '0123456789abcdefghijklmnopqrstuv=',
+  bitsPerChar: 5
+});
+const base32hexpadupper = base.rfc4648({
+  prefix: 'T',
+  name: 'base32hexpadupper',
+  alphabet: '0123456789ABCDEFGHIJKLMNOPQRSTUV=',
+  bitsPerChar: 5
+});
+const base32z = base.rfc4648({
+  prefix: 'h',
+  name: 'base32z',
+  alphabet: 'ybndrfg8ejkmcpqxot1uwisza345h769',
+  bitsPerChar: 5
+});
+
+exports.base32 = base32;
+exports.base32hex = base32hex;
+exports.base32hexpad = base32hexpad;
+exports.base32hexpadupper = base32hexpadupper;
+exports.base32hexupper = base32hexupper;
+exports.base32pad = base32pad;
+exports.base32padupper = base32padupper;
+exports.base32upper = base32upper;
+exports.base32z = base32z;
+
+},{"./base.js":24}],29:[function(require,module,exports){
+'use strict';
+
+Object.defineProperty(exports, '__esModule', { value: true });
+
+var base = require('./base.js');
+
+const base36 = base.baseX({
+  prefix: 'k',
+  name: 'base36',
+  alphabet: '0123456789abcdefghijklmnopqrstuvwxyz'
+});
+const base36upper = base.baseX({
+  prefix: 'K',
+  name: 'base36upper',
+  alphabet: '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ'
+});
+
+exports.base36 = base36;
+exports.base36upper = base36upper;
+
+},{"./base.js":24}],30:[function(require,module,exports){
+'use strict';
+
+Object.defineProperty(exports, '__esModule', { value: true });
+
+var base = require('./base.js');
+
+const base58btc = base.baseX({
+  name: 'base58btc',
+  prefix: 'z',
+  alphabet: '123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz'
+});
+const base58flickr = base.baseX({
+  name: 'base58flickr',
+  prefix: 'Z',
+  alphabet: '123456789abcdefghijkmnopqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ'
+});
+
+exports.base58btc = base58btc;
+exports.base58flickr = base58flickr;
+
+},{"./base.js":24}],31:[function(require,module,exports){
+'use strict';
+
+Object.defineProperty(exports, '__esModule', { value: true });
+
+var base = require('./base.js');
+
+const base64 = base.rfc4648({
+  prefix: 'm',
+  name: 'base64',
+  alphabet: 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/',
+  bitsPerChar: 6
+});
+const base64pad = base.rfc4648({
+  prefix: 'M',
+  name: 'base64pad',
+  alphabet: 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=',
+  bitsPerChar: 6
+});
+const base64url = base.rfc4648({
+  prefix: 'u',
+  name: 'base64url',
+  alphabet: 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_',
+  bitsPerChar: 6
+});
+const base64urlpad = base.rfc4648({
+  prefix: 'U',
+  name: 'base64urlpad',
+  alphabet: 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_=',
+  bitsPerChar: 6
+});
+
+exports.base64 = base64;
+exports.base64pad = base64pad;
+exports.base64url = base64url;
+exports.base64urlpad = base64urlpad;
+
+},{"./base.js":24}],32:[function(require,module,exports){
+'use strict';
+
+Object.defineProperty(exports, '__esModule', { value: true });
+
+var base = require('./base.js');
+
+const base8 = base.rfc4648({
+  prefix: '7',
+  name: 'base8',
+  alphabet: '01234567',
+  bitsPerChar: 3
+});
+
+exports.base8 = base8;
+
+},{"./base.js":24}],33:[function(require,module,exports){
+'use strict';
+
+Object.defineProperty(exports, '__esModule', { value: true });
+
+var base = require('./base.js');
+var bytes = require('../bytes.js');
+
+const identity = base.from({
+  prefix: '\0',
+  name: 'identity',
+  encode: buf => bytes.toString(buf),
+  decode: str => bytes.fromString(str)
+});
+
+exports.identity = identity;
+
+},{"../bytes.js":35,"./base.js":24}],34:[function(require,module,exports){
+'use strict';
+
+Object.defineProperty(exports, '__esModule', { value: true });
+
+var identity = require('./bases/identity.js');
+var base2 = require('./bases/base2.js');
+var base8 = require('./bases/base8.js');
+var base10 = require('./bases/base10.js');
+var base16 = require('./bases/base16.js');
+var base32 = require('./bases/base32.js');
+var base36 = require('./bases/base36.js');
+var base58 = require('./bases/base58.js');
+var base64 = require('./bases/base64.js');
+var sha2 = require('./hashes/sha2.js');
+var identity$1 = require('./hashes/identity.js');
+var raw = require('./codecs/raw.js');
+var json = require('./codecs/json.js');
+require('./index.js');
+var cid = require('./cid.js');
+var hasher = require('./hashes/hasher.js');
+var digest = require('./hashes/digest.js');
+var varint = require('./varint.js');
+var bytes = require('./bytes.js');
+
+const bases = {
+  ...identity,
+  ...base2,
+  ...base8,
+  ...base10,
+  ...base16,
+  ...base32,
+  ...base36,
+  ...base58,
+  ...base64
+};
+const hashes = {
+  ...sha2,
+  ...identity$1
+};
+const codecs = {
+  raw,
+  json
+};
+
+exports.CID = cid.CID;
+exports.hasher = hasher;
+exports.digest = digest;
+exports.varint = varint;
+exports.bytes = bytes;
+exports.bases = bases;
+exports.codecs = codecs;
+exports.hashes = hashes;
+
+},{"./bases/base10.js":25,"./bases/base16.js":26,"./bases/base2.js":27,"./bases/base32.js":28,"./bases/base36.js":29,"./bases/base58.js":30,"./bases/base64.js":31,"./bases/base8.js":32,"./bases/identity.js":33,"./bytes.js":35,"./cid.js":36,"./codecs/json.js":37,"./codecs/raw.js":38,"./hashes/digest.js":39,"./hashes/hasher.js":40,"./hashes/identity.js":41,"./hashes/sha2.js":42,"./index.js":43,"./varint.js":44}],35:[function(require,module,exports){
+'use strict';
+
+Object.defineProperty(exports, '__esModule', { value: true });
+
+const empty = new Uint8Array(0);
+const toHex = d => d.reduce((hex, byte) => hex + byte.toString(16).padStart(2, '0'), '');
+const fromHex = hex => {
+  const hexes = hex.match(/../g);
+  return hexes ? new Uint8Array(hexes.map(b => parseInt(b, 16))) : empty;
+};
+const equals = (aa, bb) => {
+  if (aa === bb)
+    return true;
+  if (aa.byteLength !== bb.byteLength) {
+    return false;
+  }
+  for (let ii = 0; ii < aa.byteLength; ii++) {
+    if (aa[ii] !== bb[ii]) {
+      return false;
+    }
+  }
+  return true;
+};
+const coerce = o => {
+  if (o instanceof Uint8Array && o.constructor.name === 'Uint8Array')
+    return o;
+  if (o instanceof ArrayBuffer)
+    return new Uint8Array(o);
+  if (ArrayBuffer.isView(o)) {
+    return new Uint8Array(o.buffer, o.byteOffset, o.byteLength);
+  }
+  throw new Error('Unknown type, must be binary type');
+};
+const isBinary = o => o instanceof ArrayBuffer || ArrayBuffer.isView(o);
+const fromString = str => new TextEncoder().encode(str);
+const toString = b => new TextDecoder().decode(b);
+
+exports.coerce = coerce;
+exports.empty = empty;
+exports.equals = equals;
+exports.fromHex = fromHex;
+exports.fromString = fromString;
+exports.isBinary = isBinary;
+exports.toHex = toHex;
+exports.toString = toString;
+
+},{}],36:[function(require,module,exports){
+'use strict';
+
+Object.defineProperty(exports, '__esModule', { value: true });
+
+var varint = require('./varint.js');
+var digest = require('./hashes/digest.js');
+var base58 = require('./bases/base58.js');
+var base32 = require('./bases/base32.js');
+var bytes = require('./bytes.js');
+
+class CID {
+  constructor(version, code, multihash, bytes) {
+    this.code = code;
+    this.version = version;
+    this.multihash = multihash;
+    this.bytes = bytes;
+    this.byteOffset = bytes.byteOffset;
+    this.byteLength = bytes.byteLength;
+    this.asCID = this;
+    this._baseCache = new Map();
+    Object.defineProperties(this, {
+      byteOffset: hidden,
+      byteLength: hidden,
+      code: readonly,
+      version: readonly,
+      multihash: readonly,
+      bytes: readonly,
+      _baseCache: hidden,
+      asCID: hidden
+    });
+  }
+  toV0() {
+    switch (this.version) {
+    case 0: {
+        return this;
+      }
+    default: {
+        const {code, multihash} = this;
+        if (code !== DAG_PB_CODE) {
+          throw new Error('Cannot convert a non dag-pb CID to CIDv0');
+        }
+        if (multihash.code !== SHA_256_CODE) {
+          throw new Error('Cannot convert non sha2-256 multihash CID to CIDv0');
+        }
+        return CID.createV0(multihash);
+      }
+    }
+  }
+  toV1() {
+    switch (this.version) {
+    case 0: {
+        const {code, digest: digest$1} = this.multihash;
+        const multihash = digest.create(code, digest$1);
+        return CID.createV1(this.code, multihash);
+      }
+    case 1: {
+        return this;
+      }
+    default: {
+        throw Error(`Can not convert CID version ${ this.version } to version 0. This is a bug please report`);
+      }
+    }
+  }
+  equals(other) {
+    return other && this.code === other.code && this.version === other.version && digest.equals(this.multihash, other.multihash);
+  }
+  toString(base) {
+    const {bytes, version, _baseCache} = this;
+    switch (version) {
+    case 0:
+      return toStringV0(bytes, _baseCache, base || base58.base58btc.encoder);
+    default:
+      return toStringV1(bytes, _baseCache, base || base32.base32.encoder);
+    }
+  }
+  toJSON() {
+    return {
+      code: this.code,
+      version: this.version,
+      hash: this.multihash.bytes
+    };
+  }
+  get [Symbol.toStringTag]() {
+    return 'CID';
+  }
+  [Symbol.for('nodejs.util.inspect.custom')]() {
+    return 'CID(' + this.toString() + ')';
+  }
+  static isCID(value) {
+    deprecate(/^0\.0/, IS_CID_DEPRECATION);
+    return !!(value && (value[cidSymbol] || value.asCID === value));
+  }
+  get toBaseEncodedString() {
+    throw new Error('Deprecated, use .toString()');
+  }
+  get codec() {
+    throw new Error('"codec" property is deprecated, use integer "code" property instead');
+  }
+  get buffer() {
+    throw new Error('Deprecated .buffer property, use .bytes to get Uint8Array instead');
+  }
+  get multibaseName() {
+    throw new Error('"multibaseName" property is deprecated');
+  }
+  get prefix() {
+    throw new Error('"prefix" property is deprecated');
+  }
+  static asCID(value) {
+    if (value instanceof CID) {
+      return value;
+    } else if (value != null && value.asCID === value) {
+      const {version, code, multihash, bytes} = value;
+      return new CID(version, code, multihash, bytes || encodeCID(version, code, multihash.bytes));
+    } else if (value != null && value[cidSymbol] === true) {
+      const {version, multihash, code} = value;
+      const digest$1 = digest.decode(multihash);
+      return CID.create(version, code, digest$1);
+    } else {
+      return null;
+    }
+  }
+  static create(version, code, digest) {
+    if (typeof code !== 'number') {
+      throw new Error('String codecs are no longer supported');
+    }
+    switch (version) {
+    case 0: {
+        if (code !== DAG_PB_CODE) {
+          throw new Error(`Version 0 CID must use dag-pb (code: ${ DAG_PB_CODE }) block encoding`);
+        } else {
+          return new CID(version, code, digest, digest.bytes);
+        }
+      }
+    case 1: {
+        const bytes = encodeCID(version, code, digest.bytes);
+        return new CID(version, code, digest, bytes);
+      }
+    default: {
+        throw new Error('Invalid version');
+      }
+    }
+  }
+  static createV0(digest) {
+    return CID.create(0, DAG_PB_CODE, digest);
+  }
+  static createV1(code, digest) {
+    return CID.create(1, code, digest);
+  }
+  static decode(bytes) {
+    const [cid, remainder] = CID.decodeFirst(bytes);
+    if (remainder.length) {
+      throw new Error('Incorrect length');
+    }
+    return cid;
+  }
+  static decodeFirst(bytes$1) {
+    const specs = CID.inspectBytes(bytes$1);
+    const prefixSize = specs.size - specs.multihashSize;
+    const multihashBytes = bytes.coerce(bytes$1.subarray(prefixSize, prefixSize + specs.multihashSize));
+    if (multihashBytes.byteLength !== specs.multihashSize) {
+      throw new Error('Incorrect length');
+    }
+    const digestBytes = multihashBytes.subarray(specs.multihashSize - specs.digestSize);
+    const digest$1 = new digest.Digest(specs.multihashCode, specs.digestSize, digestBytes, multihashBytes);
+    const cid = specs.version === 0 ? CID.createV0(digest$1) : CID.createV1(specs.codec, digest$1);
+    return [
+      cid,
+      bytes$1.subarray(specs.size)
+    ];
+  }
+  static inspectBytes(initialBytes) {
+    let offset = 0;
+    const next = () => {
+      const [i, length] = varint.decode(initialBytes.subarray(offset));
+      offset += length;
+      return i;
+    };
+    let version = next();
+    let codec = DAG_PB_CODE;
+    if (version === 18) {
+      version = 0;
+      offset = 0;
+    } else if (version === 1) {
+      codec = next();
+    }
+    if (version !== 0 && version !== 1) {
+      throw new RangeError(`Invalid CID version ${ version }`);
+    }
+    const prefixSize = offset;
+    const multihashCode = next();
+    const digestSize = next();
+    const size = offset + digestSize;
+    const multihashSize = size - prefixSize;
+    return {
+      version,
+      codec,
+      multihashCode,
+      digestSize,
+      multihashSize,
+      size
+    };
+  }
+  static parse(source, base) {
+    const [prefix, bytes] = parseCIDtoBytes(source, base);
+    const cid = CID.decode(bytes);
+    cid._baseCache.set(prefix, source);
+    return cid;
+  }
+}
+const parseCIDtoBytes = (source, base) => {
+  switch (source[0]) {
+  case 'Q': {
+      const decoder = base || base58.base58btc;
+      return [
+        base58.base58btc.prefix,
+        decoder.decode(`${ base58.base58btc.prefix }${ source }`)
+      ];
+    }
+  case base58.base58btc.prefix: {
+      const decoder = base || base58.base58btc;
+      return [
+        base58.base58btc.prefix,
+        decoder.decode(source)
+      ];
+    }
+  case base32.base32.prefix: {
+      const decoder = base || base32.base32;
+      return [
+        base32.base32.prefix,
+        decoder.decode(source)
+      ];
+    }
+  default: {
+      if (base == null) {
+        throw Error('To parse non base32 or base58btc encoded CID multibase decoder must be provided');
+      }
+      return [
+        source[0],
+        base.decode(source)
+      ];
+    }
+  }
+};
+const toStringV0 = (bytes, cache, base) => {
+  const {prefix} = base;
+  if (prefix !== base58.base58btc.prefix) {
+    throw Error(`Cannot string encode V0 in ${ base.name } encoding`);
+  }
+  const cid = cache.get(prefix);
+  if (cid == null) {
+    const cid = base.encode(bytes).slice(1);
+    cache.set(prefix, cid);
+    return cid;
+  } else {
+    return cid;
+  }
+};
+const toStringV1 = (bytes, cache, base) => {
+  const {prefix} = base;
+  const cid = cache.get(prefix);
+  if (cid == null) {
+    const cid = base.encode(bytes);
+    cache.set(prefix, cid);
+    return cid;
+  } else {
+    return cid;
+  }
+};
+const DAG_PB_CODE = 112;
+const SHA_256_CODE = 18;
+const encodeCID = (version, code, multihash) => {
+  const codeOffset = varint.encodingLength(version);
+  const hashOffset = codeOffset + varint.encodingLength(code);
+  const bytes = new Uint8Array(hashOffset + multihash.byteLength);
+  varint.encodeTo(version, bytes, 0);
+  varint.encodeTo(code, bytes, codeOffset);
+  bytes.set(multihash, hashOffset);
+  return bytes;
+};
+const cidSymbol = Symbol.for('@ipld/js-cid/CID');
+const readonly = {
+  writable: false,
+  configurable: false,
+  enumerable: true
+};
+const hidden = {
+  writable: false,
+  enumerable: false,
+  configurable: false
+};
+const version = '0.0.0-dev';
+const deprecate = (range, message) => {
+  if (range.test(version)) {
+    console.warn(message);
+  } else {
+    throw new Error(message);
+  }
+};
+const IS_CID_DEPRECATION = `CID.isCID(v) is deprecated and will be removed in the next major release.
+Following code pattern:
+
+if (CID.isCID(value)) {
+  doSomethingWithCID(value)
 }
 
-module.exports = Object.freeze(varintTable)
+Is replaced with:
 
-},{"./base-table":30,"./util":35}],37:[function(require,module,exports){
+const cid = CID.asCID(value)
+if (cid) {
+  // Make sure to use cid instead of value
+  doSomethingWithCID(cid)
+}
+`;
+
+exports.CID = CID;
+
+},{"./bases/base32.js":28,"./bases/base58.js":30,"./bytes.js":35,"./hashes/digest.js":39,"./varint.js":44}],37:[function(require,module,exports){
+'use strict';
+
+Object.defineProperty(exports, '__esModule', { value: true });
+
+const {name, code, encode, decode} = {
+  name: 'json',
+  code: 512,
+  encode: json => new TextEncoder().encode(JSON.stringify(json)),
+  decode: bytes => JSON.parse(new TextDecoder().decode(bytes))
+};
+
+exports.code = code;
+exports.decode = decode;
+exports.encode = encode;
+exports.name = name;
+
+},{}],38:[function(require,module,exports){
+'use strict';
+
+Object.defineProperty(exports, '__esModule', { value: true });
+
+var bytes = require('../bytes.js');
+
+const raw = bytes$1 => bytes.coerce(bytes$1);
+const {name, code, encode, decode} = {
+  name: 'raw',
+  code: 85,
+  decode: raw,
+  encode: raw
+};
+
+exports.code = code;
+exports.decode = decode;
+exports.encode = encode;
+exports.name = name;
+
+},{"../bytes.js":35}],39:[function(require,module,exports){
+'use strict';
+
+Object.defineProperty(exports, '__esModule', { value: true });
+
+var bytes = require('../bytes.js');
+var varint = require('../varint.js');
+
+const create = (code, digest) => {
+  const size = digest.byteLength;
+  const sizeOffset = varint.encodingLength(code);
+  const digestOffset = sizeOffset + varint.encodingLength(size);
+  const bytes = new Uint8Array(digestOffset + size);
+  varint.encodeTo(code, bytes, 0);
+  varint.encodeTo(size, bytes, sizeOffset);
+  bytes.set(digest, digestOffset);
+  return new Digest(code, size, digest, bytes);
+};
+const decode = multihash => {
+  const bytes$1 = bytes.coerce(multihash);
+  const [code, sizeOffset] = varint.decode(bytes$1);
+  const [size, digestOffset] = varint.decode(bytes$1.subarray(sizeOffset));
+  const digest = bytes$1.subarray(sizeOffset + digestOffset);
+  if (digest.byteLength !== size) {
+    throw new Error('Incorrect length');
+  }
+  return new Digest(code, size, digest, bytes$1);
+};
+const equals = (a, b) => {
+  if (a === b) {
+    return true;
+  } else {
+    return a.code === b.code && a.size === b.size && bytes.equals(a.bytes, b.bytes);
+  }
+};
+class Digest {
+  constructor(code, size, digest, bytes) {
+    this.code = code;
+    this.size = size;
+    this.digest = digest;
+    this.bytes = bytes;
+  }
+}
+
+exports.Digest = Digest;
+exports.create = create;
+exports.decode = decode;
+exports.equals = equals;
+
+},{"../bytes.js":35,"../varint.js":44}],40:[function(require,module,exports){
+'use strict';
+
+Object.defineProperty(exports, '__esModule', { value: true });
+
+var digest = require('./digest.js');
+
+const from = ({name, code, encode}) => new Hasher(name, code, encode);
+class Hasher {
+  constructor(name, code, encode) {
+    this.name = name;
+    this.code = code;
+    this.encode = encode;
+  }
+  async digest(input) {
+    if (input instanceof Uint8Array) {
+      const digest$1 = await this.encode(input);
+      return digest.create(this.code, digest$1);
+    } else {
+      throw Error('Unknown type, must be binary type');
+    }
+  }
+}
+
+exports.Hasher = Hasher;
+exports.from = from;
+
+},{"./digest.js":39}],41:[function(require,module,exports){
+'use strict';
+
+Object.defineProperty(exports, '__esModule', { value: true });
+
+var hasher = require('./hasher.js');
+var bytes = require('../bytes.js');
+
+const identity = hasher.from({
+  name: 'identity',
+  code: 0,
+  encode: input => bytes.coerce(input)
+});
+
+exports.identity = identity;
+
+},{"../bytes.js":35,"./hasher.js":40}],42:[function(require,module,exports){
+'use strict';
+
+Object.defineProperty(exports, '__esModule', { value: true });
+
+var hasher = require('./hasher.js');
+
+const sha = name => async data => new Uint8Array(await crypto.subtle.digest(name, data));
+const sha256 = hasher.from({
+  name: 'sha2-256',
+  code: 18,
+  encode: sha('SHA-256')
+});
+const sha512 = hasher.from({
+  name: 'sha2-512',
+  code: 19,
+  encode: sha('SHA-512')
+});
+
+exports.sha256 = sha256;
+exports.sha512 = sha512;
+
+},{"./hasher.js":40}],43:[function(require,module,exports){
+'use strict';
+
+Object.defineProperty(exports, '__esModule', { value: true });
+
+var cid = require('./cid.js');
+var varint = require('./varint.js');
+var bytes = require('./bytes.js');
+var hasher = require('./hashes/hasher.js');
+var digest = require('./hashes/digest.js');
+
+
+
+exports.CID = cid.CID;
+exports.varint = varint;
+exports.bytes = bytes;
+exports.hasher = hasher;
+exports.digest = digest;
+
+},{"./bytes.js":35,"./cid.js":36,"./hashes/digest.js":39,"./hashes/hasher.js":40,"./varint.js":44}],44:[function(require,module,exports){
+'use strict';
+
+Object.defineProperty(exports, '__esModule', { value: true });
+
+var varint$1 = require('../vendor/varint.js');
+
+const decode = data => {
+  const code = varint$1.decode(data);
+  return [
+    code,
+    varint$1.decode.bytes
+  ];
+};
+const encodeTo = (int, target, offset = 0) => {
+  varint$1.encode(int, target, offset);
+  return target;
+};
+const encodingLength = int => {
+  return varint$1.encodingLength(int);
+};
+
+exports.decode = decode;
+exports.encodeTo = encodeTo;
+exports.encodingLength = encodingLength;
+
+},{"../vendor/varint.js":46}],45:[function(require,module,exports){
+'use strict';
+
+function base(ALPHABET, name) {
+  if (ALPHABET.length >= 255) {
+    throw new TypeError('Alphabet too long');
+  }
+  var BASE_MAP = new Uint8Array(256);
+  for (var j = 0; j < BASE_MAP.length; j++) {
+    BASE_MAP[j] = 255;
+  }
+  for (var i = 0; i < ALPHABET.length; i++) {
+    var x = ALPHABET.charAt(i);
+    var xc = x.charCodeAt(0);
+    if (BASE_MAP[xc] !== 255) {
+      throw new TypeError(x + ' is ambiguous');
+    }
+    BASE_MAP[xc] = i;
+  }
+  var BASE = ALPHABET.length;
+  var LEADER = ALPHABET.charAt(0);
+  var FACTOR = Math.log(BASE) / Math.log(256);
+  var iFACTOR = Math.log(256) / Math.log(BASE);
+  function encode(source) {
+    if (source instanceof Uint8Array);
+    else if (ArrayBuffer.isView(source)) {
+      source = new Uint8Array(source.buffer, source.byteOffset, source.byteLength);
+    } else if (Array.isArray(source)) {
+      source = Uint8Array.from(source);
+    }
+    if (!(source instanceof Uint8Array)) {
+      throw new TypeError('Expected Uint8Array');
+    }
+    if (source.length === 0) {
+      return '';
+    }
+    var zeroes = 0;
+    var length = 0;
+    var pbegin = 0;
+    var pend = source.length;
+    while (pbegin !== pend && source[pbegin] === 0) {
+      pbegin++;
+      zeroes++;
+    }
+    var size = (pend - pbegin) * iFACTOR + 1 >>> 0;
+    var b58 = new Uint8Array(size);
+    while (pbegin !== pend) {
+      var carry = source[pbegin];
+      var i = 0;
+      for (var it1 = size - 1; (carry !== 0 || i < length) && it1 !== -1; it1--, i++) {
+        carry += 256 * b58[it1] >>> 0;
+        b58[it1] = carry % BASE >>> 0;
+        carry = carry / BASE >>> 0;
+      }
+      if (carry !== 0) {
+        throw new Error('Non-zero carry');
+      }
+      length = i;
+      pbegin++;
+    }
+    var it2 = size - length;
+    while (it2 !== size && b58[it2] === 0) {
+      it2++;
+    }
+    var str = LEADER.repeat(zeroes);
+    for (; it2 < size; ++it2) {
+      str += ALPHABET.charAt(b58[it2]);
+    }
+    return str;
+  }
+  function decodeUnsafe(source) {
+    if (typeof source !== 'string') {
+      throw new TypeError('Expected String');
+    }
+    if (source.length === 0) {
+      return new Uint8Array();
+    }
+    var psz = 0;
+    if (source[psz] === ' ') {
+      return;
+    }
+    var zeroes = 0;
+    var length = 0;
+    while (source[psz] === LEADER) {
+      zeroes++;
+      psz++;
+    }
+    var size = (source.length - psz) * FACTOR + 1 >>> 0;
+    var b256 = new Uint8Array(size);
+    while (source[psz]) {
+      var carry = BASE_MAP[source.charCodeAt(psz)];
+      if (carry === 255) {
+        return;
+      }
+      var i = 0;
+      for (var it3 = size - 1; (carry !== 0 || i < length) && it3 !== -1; it3--, i++) {
+        carry += BASE * b256[it3] >>> 0;
+        b256[it3] = carry % 256 >>> 0;
+        carry = carry / 256 >>> 0;
+      }
+      if (carry !== 0) {
+        throw new Error('Non-zero carry');
+      }
+      length = i;
+      psz++;
+    }
+    if (source[psz] === ' ') {
+      return;
+    }
+    var it4 = size - length;
+    while (it4 !== size && b256[it4] === 0) {
+      it4++;
+    }
+    var vch = new Uint8Array(zeroes + (size - it4));
+    var j = zeroes;
+    while (it4 !== size) {
+      vch[j++] = b256[it4++];
+    }
+    return vch;
+  }
+  function decode(string) {
+    var buffer = decodeUnsafe(string);
+    if (buffer) {
+      return buffer;
+    }
+    throw new Error(`Non-${ name } character`);
+  }
+  return {
+    encode: encode,
+    decodeUnsafe: decodeUnsafe,
+    decode: decode
+  };
+}
+var src = base;
+var _brrp__multiformats_scope_baseX = src;
+
+module.exports = _brrp__multiformats_scope_baseX;
+
+},{}],46:[function(require,module,exports){
+'use strict';
+
+var encode_1 = encode;
+var MSB = 128, REST = 127, MSBALL = ~REST, INT = Math.pow(2, 31);
+function encode(num, out, offset) {
+  out = out || [];
+  offset = offset || 0;
+  var oldOffset = offset;
+  while (num >= INT) {
+    out[offset++] = num & 255 | MSB;
+    num /= 128;
+  }
+  while (num & MSBALL) {
+    out[offset++] = num & 255 | MSB;
+    num >>>= 7;
+  }
+  out[offset] = num | 0;
+  encode.bytes = offset - oldOffset + 1;
+  return out;
+}
+var decode = read;
+var MSB$1 = 128, REST$1 = 127;
+function read(buf, offset) {
+  var res = 0, offset = offset || 0, shift = 0, counter = offset, b, l = buf.length;
+  do {
+    if (counter >= l) {
+      read.bytes = 0;
+      throw new RangeError('Could not decode varint');
+    }
+    b = buf[counter++];
+    res += shift < 28 ? (b & REST$1) << shift : (b & REST$1) * Math.pow(2, shift);
+    shift += 7;
+  } while (b >= MSB$1);
+  read.bytes = counter - offset;
+  return res;
+}
+var N1 = Math.pow(2, 7);
+var N2 = Math.pow(2, 14);
+var N3 = Math.pow(2, 21);
+var N4 = Math.pow(2, 28);
+var N5 = Math.pow(2, 35);
+var N6 = Math.pow(2, 42);
+var N7 = Math.pow(2, 49);
+var N8 = Math.pow(2, 56);
+var N9 = Math.pow(2, 63);
+var length = function (value) {
+  return value < N1 ? 1 : value < N2 ? 2 : value < N3 ? 3 : value < N4 ? 4 : value < N5 ? 5 : value < N6 ? 6 : value < N7 ? 7 : value < N8 ? 8 : value < N9 ? 9 : 10;
+};
+var varint = {
+  encode: encode_1,
+  decode: decode,
+  encodingLength: length
+};
+var _brrp_varint = varint;
+var varint$1 = _brrp_varint;
+
+module.exports = varint$1;
+
+},{}],47:[function(require,module,exports){
 // @ts-check
 'use strict'
 const { Buffer } = require('buffer')
@@ -5146,7 +6227,7 @@ class Base {
 
 module.exports = Base
 
-},{"buffer":4}],38:[function(require,module,exports){
+},{"buffer":4}],48:[function(require,module,exports){
 // @ts-check
 'use strict'
 
@@ -5209,7 +6290,7 @@ module.exports = {
   codes
 }
 
-},{"./base.js":37,"./rfc4648":40,"./util":41,"base-x":2}],39:[function(require,module,exports){
+},{"./base.js":47,"./rfc4648":50,"./util":51,"base-x":2}],49:[function(require,module,exports){
 // @ts-check
 /**
  * Implementation of the [multibase](https://github.com/multiformats/multibase) specification.
@@ -5362,7 +6443,7 @@ exports.encodingFromData = encodingFromData
 exports.names = Object.freeze(constants.names)
 exports.codes = Object.freeze(constants.codes)
 
-},{"./constants":38,"./util":41,"buffer":4}],40:[function(require,module,exports){
+},{"./constants":48,"./util":51,"buffer":4}],50:[function(require,module,exports){
 // @ts-check
 'use strict'
 
@@ -5483,7 +6564,7 @@ module.exports = (bitsPerChar) => (alphabet) => {
   }
 }
 
-},{}],41:[function(require,module,exports){
+},{}],51:[function(require,module,exports){
 // @ts-check
 'use strict'
 
@@ -5513,7 +6594,7 @@ const asBuffer = ({ buffer, byteLength, byteOffset }) =>
 
 module.exports = { decodeText, encodeText, asBuffer }
 
-},{"buffer":4,"web-encoding":56}],42:[function(require,module,exports){
+},{"buffer":4,"web-encoding":68}],52:[function(require,module,exports){
 /* eslint quote-props: off */
 'use strict'
 
@@ -5872,7 +6953,7 @@ const names = Object.freeze({
 
 module.exports = { names }
 
-},{}],43:[function(require,module,exports){
+},{}],53:[function(require,module,exports){
 // @ts-check
 /* eslint-disable guard-for-in */
 /**
@@ -6114,7 +7195,194 @@ exports.prefix = function prefix (multihash) {
   return Buffer.from(multihash.buffer, multihash.byteOffset, 2)
 }
 
-},{"./constants":42,"buffer":4,"multibase":39,"varint":54,"web-encoding":56}],44:[function(require,module,exports){
+},{"./constants":52,"buffer":4,"multibase":49,"varint":66,"web-encoding":68}],54:[function(require,module,exports){
+// shim for using process in browser
+var process = module.exports = {};
+
+// cached from whatever global is present so that test runners that stub it
+// don't break things.  But we need to wrap it in a try catch in case it is
+// wrapped in strict mode code which doesn't define any globals.  It's inside a
+// function because try/catches deoptimize in certain engines.
+
+var cachedSetTimeout;
+var cachedClearTimeout;
+
+function defaultSetTimout() {
+    throw new Error('setTimeout has not been defined');
+}
+function defaultClearTimeout () {
+    throw new Error('clearTimeout has not been defined');
+}
+(function () {
+    try {
+        if (typeof setTimeout === 'function') {
+            cachedSetTimeout = setTimeout;
+        } else {
+            cachedSetTimeout = defaultSetTimout;
+        }
+    } catch (e) {
+        cachedSetTimeout = defaultSetTimout;
+    }
+    try {
+        if (typeof clearTimeout === 'function') {
+            cachedClearTimeout = clearTimeout;
+        } else {
+            cachedClearTimeout = defaultClearTimeout;
+        }
+    } catch (e) {
+        cachedClearTimeout = defaultClearTimeout;
+    }
+} ())
+function runTimeout(fun) {
+    if (cachedSetTimeout === setTimeout) {
+        //normal enviroments in sane situations
+        return setTimeout(fun, 0);
+    }
+    // if setTimeout wasn't available but was latter defined
+    if ((cachedSetTimeout === defaultSetTimout || !cachedSetTimeout) && setTimeout) {
+        cachedSetTimeout = setTimeout;
+        return setTimeout(fun, 0);
+    }
+    try {
+        // when when somebody has screwed with setTimeout but no I.E. maddness
+        return cachedSetTimeout(fun, 0);
+    } catch(e){
+        try {
+            // When we are in I.E. but the script has been evaled so I.E. doesn't trust the global object when called normally
+            return cachedSetTimeout.call(null, fun, 0);
+        } catch(e){
+            // same as above but when it's a version of I.E. that must have the global object for 'this', hopfully our context correct otherwise it will throw a global error
+            return cachedSetTimeout.call(this, fun, 0);
+        }
+    }
+
+
+}
+function runClearTimeout(marker) {
+    if (cachedClearTimeout === clearTimeout) {
+        //normal enviroments in sane situations
+        return clearTimeout(marker);
+    }
+    // if clearTimeout wasn't available but was latter defined
+    if ((cachedClearTimeout === defaultClearTimeout || !cachedClearTimeout) && clearTimeout) {
+        cachedClearTimeout = clearTimeout;
+        return clearTimeout(marker);
+    }
+    try {
+        // when when somebody has screwed with setTimeout but no I.E. maddness
+        return cachedClearTimeout(marker);
+    } catch (e){
+        try {
+            // When we are in I.E. but the script has been evaled so I.E. doesn't  trust the global object when called normally
+            return cachedClearTimeout.call(null, marker);
+        } catch (e){
+            // same as above but when it's a version of I.E. that must have the global object for 'this', hopfully our context correct otherwise it will throw a global error.
+            // Some versions of I.E. have different rules for clearTimeout vs setTimeout
+            return cachedClearTimeout.call(this, marker);
+        }
+    }
+
+
+
+}
+var queue = [];
+var draining = false;
+var currentQueue;
+var queueIndex = -1;
+
+function cleanUpNextTick() {
+    if (!draining || !currentQueue) {
+        return;
+    }
+    draining = false;
+    if (currentQueue.length) {
+        queue = currentQueue.concat(queue);
+    } else {
+        queueIndex = -1;
+    }
+    if (queue.length) {
+        drainQueue();
+    }
+}
+
+function drainQueue() {
+    if (draining) {
+        return;
+    }
+    var timeout = runTimeout(cleanUpNextTick);
+    draining = true;
+
+    var len = queue.length;
+    while(len) {
+        currentQueue = queue;
+        queue = [];
+        while (++queueIndex < len) {
+            if (currentQueue) {
+                currentQueue[queueIndex].run();
+            }
+        }
+        queueIndex = -1;
+        len = queue.length;
+    }
+    currentQueue = null;
+    draining = false;
+    runClearTimeout(timeout);
+}
+
+process.nextTick = function (fun) {
+    var args = new Array(arguments.length - 1);
+    if (arguments.length > 1) {
+        for (var i = 1; i < arguments.length; i++) {
+            args[i - 1] = arguments[i];
+        }
+    }
+    queue.push(new Item(fun, args));
+    if (queue.length === 1 && !draining) {
+        runTimeout(drainQueue);
+    }
+};
+
+// v8 likes predictible objects
+function Item(fun, array) {
+    this.fun = fun;
+    this.array = array;
+}
+Item.prototype.run = function () {
+    this.fun.apply(null, this.array);
+};
+process.title = 'browser';
+process.browser = true;
+process.env = {};
+process.argv = [];
+process.version = ''; // empty string to avoid regexp issues
+process.versions = {};
+
+function noop() {}
+
+process.on = noop;
+process.addListener = noop;
+process.once = noop;
+process.off = noop;
+process.removeListener = noop;
+process.removeAllListeners = noop;
+process.emit = noop;
+process.prependListener = noop;
+process.prependOnceListener = noop;
+
+process.listeners = function (name) { return [] }
+
+process.binding = function (name) {
+    throw new Error('process.binding is not supported');
+};
+
+process.cwd = function () { return '/' };
+process.chdir = function (dir) {
+    throw new Error('process.chdir is not supported');
+};
+process.umask = function() { return 0; };
+
+},{}],55:[function(require,module,exports){
+/*! safe-buffer. MIT License. Feross Aboukhadijeh <https://feross.org/opensource> */
 /* eslint-disable node/no-deprecated-api */
 var buffer = require('buffer')
 var Buffer = buffer.Buffer
@@ -6136,6 +7404,8 @@ if (Buffer.from && Buffer.alloc && Buffer.allocUnsafe && Buffer.allocUnsafeSlow)
 function SafeBuffer (arg, encodingOrOffset, length) {
   return Buffer(arg, encodingOrOffset, length)
 }
+
+SafeBuffer.prototype = Object.create(Buffer.prototype)
 
 // Copy static methods from Buffer
 copyProps(Buffer, SafeBuffer)
@@ -6178,276 +7448,755 @@ SafeBuffer.allocUnsafeSlow = function (size) {
   return buffer.SlowBuffer(size)
 }
 
-},{"buffer":4}],45:[function(require,module,exports){
-'use strict'
+},{"buffer":4}],56:[function(require,module,exports){
+'use strict';
 
-/**
- * Returns a new Uint8Array created by concatenating the passed ArrayLikes
- *
- * @param {Array<ArrayLike<number>>} arrays
- * @param {Number} length
- * @returns {Uint8Array}
- */
-function concat (arrays, length) {
+Object.defineProperty(exports, '__esModule', { value: true });
+
+function concat(arrays, length) {
   if (!length) {
-    length = arrays.reduce((acc, curr) => acc + curr.length, 0)
+    length = arrays.reduce((acc, curr) => acc + curr.length, 0);
   }
-
-  const output = new Uint8Array(length)
-  let offset = 0
-
+  const output = new Uint8Array(length);
+  let offset = 0;
   for (const arr of arrays) {
-    output.set(arr, offset)
-    offset += arr.length
+    output.set(arr, offset);
+    offset += arr.length;
   }
-
-  return output
+  return output;
 }
 
-module.exports = concat
+exports.concat = concat;
 
-},{}],46:[function(require,module,exports){
-'use strict'
+},{}],57:[function(require,module,exports){
+'use strict';
 
-const { names } = require('multibase/src/constants')
-const { TextEncoder } = require('web-encoding')
-const utf8Encoder = new TextEncoder()
+Object.defineProperty(exports, '__esModule', { value: true });
 
-/**
- * Interperets each character in a string as a byte and
- * returns a Uint8Array of those bytes.
- *
- * @param {String} string The string to turn into an array
- * @returns {Uint8Array}
- */
-function asciiStringToUint8Array (string) {
-  const array = new Uint8Array(string.length)
-
-  for (let i = 0; i < string.length; i++) {
-    array[i] = string.charCodeAt(i)
+function equals(a, b) {
+  if (a === b) {
+    return true;
   }
-
-  return array
-}
-
-/**
- * Create a `Uint8Array` from the passed string
- *
- * Supports `utf8`, `utf-8` and any encoding supported by the multibase module.
- *
- * Also `ascii` which is similar to node's 'binary' encoding.
- *
- * @param {String} string
- * @param {String} [encoding=utf8] utf8, base16, base64, base64urlpad, etc
- * @returns {Uint8Array}
- * @see {@link https://www.npmjs.com/package/multibase|multibase} for supported encodings other than `utf8`
- */
-function fromString (string, encoding = 'utf8') {
-  if (encoding === 'utf8' || encoding === 'utf-8') {
-    return utf8Encoder.encode(string)
+  if (a.byteLength !== b.byteLength) {
+    return false;
   }
-
-  if (encoding === 'ascii') {
-    return asciiStringToUint8Array(string)
-  }
-
-  const codec = names[encoding]
-
-  if (!codec) {
-    throw new Error('Unknown base')
-  }
-
-  return codec.decode(string)
-}
-
-module.exports = fromString
-
-},{"multibase/src/constants":48,"web-encoding":56}],47:[function(require,module,exports){
-arguments[4][21][0].apply(exports,arguments)
-},{"./util":50,"dup":21}],48:[function(require,module,exports){
-arguments[4][22][0].apply(exports,arguments)
-},{"./base.js":47,"./rfc4648":49,"./util":50,"@multiformats/base-x":1,"dup":22}],49:[function(require,module,exports){
-'use strict'
-
-/** @typedef {import('./types').CodecFactory} CodecFactory */
-
-/**
- * @param {string} string
- * @param {string} alphabet
- * @param {number} bitsPerChar
- * @returns {Uint8Array}
- */
-const decode = (string, alphabet, bitsPerChar) => {
-  // Build the character lookup table:
-  const codes = {}
-  for (let i = 0; i < alphabet.length; ++i) {
-    codes[alphabet[i]] = i
-  }
-
-  // Count the padding bytes:
-  let end = string.length
-  while (string[end - 1] === '=') {
-    --end
-  }
-
-  // Allocate the output:
-  const out = new Uint8Array((end * bitsPerChar / 8) | 0)
-
-  // Parse the data:
-  let bits = 0 // Number of bits currently in the buffer
-  let buffer = 0 // Bits waiting to be written out, MSB first
-  let written = 0 // Next byte to write
-  for (let i = 0; i < end; ++i) {
-    // Read one character from the string:
-    const value = codes[string[i]]
-    if (value === undefined) {
-      throw new SyntaxError('Invalid character ' + string[i])
-    }
-
-    // Append the bits to the buffer:
-    buffer = (buffer << bitsPerChar) | value
-    bits += bitsPerChar
-
-    // Write out some bits if the buffer has a byte's worth:
-    if (bits >= 8) {
-      bits -= 8
-      out[written++] = 0xff & (buffer >> bits)
+  for (let i = 0; i < a.byteLength; i++) {
+    if (a[i] !== b[i]) {
+      return false;
     }
   }
-
-  // Verify that we have received just enough bits:
-  if (bits >= bitsPerChar || 0xff & (buffer << (8 - bits))) {
-    throw new SyntaxError('Unexpected end of data')
-  }
-
-  return out
+  return true;
 }
 
-/**
- * @param {Uint8Array} data
- * @param {string} alphabet
- * @param {number} bitsPerChar
- * @returns {string}
- */
-const encode = (data, alphabet, bitsPerChar) => {
-  const pad = alphabet[alphabet.length - 1] === '='
-  const mask = (1 << bitsPerChar) - 1
-  let out = ''
+exports.equals = equals;
 
-  let bits = 0 // Number of bits currently in the buffer
-  let buffer = 0 // Bits waiting to be written out, MSB first
-  for (let i = 0; i < data.length; ++i) {
-    // Slurp data into the buffer:
-    buffer = (buffer << 8) | data[i]
-    bits += 8
+},{}],58:[function(require,module,exports){
+'use strict';
 
-    // Write out as much as we can:
-    while (bits > bitsPerChar) {
-      bits -= bitsPerChar
-      out += alphabet[mask & (buffer >> bits)]
-    }
+Object.defineProperty(exports, '__esModule', { value: true });
+
+var bases = require('./util/bases.js');
+
+function fromString(string, encoding = 'utf8') {
+  const base = bases[encoding];
+  if (!base) {
+    throw new Error(`Unsupported encoding "${ encoding }"`);
   }
-
-  // Partial character:
-  if (bits) {
-    out += alphabet[mask & (buffer << (bitsPerChar - bits))]
-  }
-
-  // Add padding characters until we hit a byte boundary:
-  if (pad) {
-    while ((out.length * bitsPerChar) & 7) {
-      out += '='
-    }
-  }
-
-  return out
+  return base.decoder.decode(`${ base.prefix }${ string }`);
 }
 
-/**
- * RFC4648 Factory
- *
- * @param {number} bitsPerChar
- * @returns {CodecFactory}
- */
-const rfc4648 = (bitsPerChar) => (alphabet) => {
+exports.fromString = fromString;
+
+},{"./util/bases.js":60}],59:[function(require,module,exports){
+'use strict';
+
+Object.defineProperty(exports, '__esModule', { value: true });
+
+var bases = require('./util/bases.js');
+
+function toString(array, encoding = 'utf8') {
+  const base = bases[encoding];
+  if (!base) {
+    throw new Error(`Unsupported encoding "${ encoding }"`);
+  }
+  return base.encoder.encode(array).substring(1);
+}
+
+exports.toString = toString;
+
+},{"./util/bases.js":60}],60:[function(require,module,exports){
+'use strict';
+
+var basics = require('multiformats/basics');
+
+function createCodec(name, prefix, encode, decode) {
   return {
-    /**
-     * @param {Uint8Array} input
-     * @returns {string}
-     */
-    encode (input) {
-      return encode(input, alphabet, bitsPerChar)
+    name,
+    prefix,
+    encoder: {
+      name,
+      prefix,
+      encode
     },
-    /**
-     * @param {string} input
-     * @returns {Uint8Array}
-     */
-    decode (input) {
-      return decode(input, alphabet, bitsPerChar)
+    decoder: { decode }
+  };
+}
+const string = createCodec('utf8', 'u', buf => {
+  const decoder = new TextDecoder('utf8');
+  return 'u' + decoder.decode(buf);
+}, str => {
+  const encoder = new TextEncoder();
+  return encoder.encode(str.substring(1));
+});
+const ascii = createCodec('ascii', 'a', buf => {
+  let string = 'a';
+  for (let i = 0; i < buf.length; i++) {
+    string += String.fromCharCode(buf[i]);
+  }
+  return string;
+}, str => {
+  str = str.substring(1);
+  const buf = new Uint8Array(str.length);
+  for (let i = 0; i < str.length; i++) {
+    buf[i] = str.charCodeAt(i);
+  }
+  return buf;
+});
+const BASES = {
+  utf8: string,
+  'utf-8': string,
+  hex: basics.bases.base16,
+  latin1: ascii,
+  ascii: ascii,
+  binary: ascii,
+  ...basics.bases
+};
+
+module.exports = BASES;
+
+},{"multiformats/basics":34}],61:[function(require,module,exports){
+if (typeof Object.create === 'function') {
+  // implementation from standard node.js 'util' module
+  module.exports = function inherits(ctor, superCtor) {
+    ctor.super_ = superCtor
+    ctor.prototype = Object.create(superCtor.prototype, {
+      constructor: {
+        value: ctor,
+        enumerable: false,
+        writable: true,
+        configurable: true
+      }
+    });
+  };
+} else {
+  // old school shim for old browsers
+  module.exports = function inherits(ctor, superCtor) {
+    ctor.super_ = superCtor
+    var TempCtor = function () {}
+    TempCtor.prototype = superCtor.prototype
+    ctor.prototype = new TempCtor()
+    ctor.prototype.constructor = ctor
+  }
+}
+
+},{}],62:[function(require,module,exports){
+module.exports = function isBuffer(arg) {
+  return arg && typeof arg === 'object'
+    && typeof arg.copy === 'function'
+    && typeof arg.fill === 'function'
+    && typeof arg.readUInt8 === 'function';
+}
+},{}],63:[function(require,module,exports){
+(function (process,global){(function (){
+// Copyright Joyent, Inc. and other Node contributors.
+//
+// Permission is hereby granted, free of charge, to any person obtaining a
+// copy of this software and associated documentation files (the
+// "Software"), to deal in the Software without restriction, including
+// without limitation the rights to use, copy, modify, merge, publish,
+// distribute, sublicense, and/or sell copies of the Software, and to permit
+// persons to whom the Software is furnished to do so, subject to the
+// following conditions:
+//
+// The above copyright notice and this permission notice shall be included
+// in all copies or substantial portions of the Software.
+//
+// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
+// OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+// MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN
+// NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
+// DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR
+// OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE
+// USE OR OTHER DEALINGS IN THE SOFTWARE.
+
+var formatRegExp = /%[sdj%]/g;
+exports.format = function(f) {
+  if (!isString(f)) {
+    var objects = [];
+    for (var i = 0; i < arguments.length; i++) {
+      objects.push(inspect(arguments[i]));
+    }
+    return objects.join(' ');
+  }
+
+  var i = 1;
+  var args = arguments;
+  var len = args.length;
+  var str = String(f).replace(formatRegExp, function(x) {
+    if (x === '%%') return '%';
+    if (i >= len) return x;
+    switch (x) {
+      case '%s': return String(args[i++]);
+      case '%d': return Number(args[i++]);
+      case '%j':
+        try {
+          return JSON.stringify(args[i++]);
+        } catch (_) {
+          return '[Circular]';
+        }
+      default:
+        return x;
+    }
+  });
+  for (var x = args[i]; i < len; x = args[++i]) {
+    if (isNull(x) || !isObject(x)) {
+      str += ' ' + x;
+    } else {
+      str += ' ' + inspect(x);
     }
   }
-}
+  return str;
+};
 
-module.exports = { rfc4648 }
 
-},{}],50:[function(require,module,exports){
-arguments[4][25][0].apply(exports,arguments)
-},{"dup":25,"web-encoding":56}],51:[function(require,module,exports){
-'use strict'
+// Mark that a method should not be used.
+// Returns a modified function which warns once by default.
+// If --no-deprecation is set, then it is a no-op.
+exports.deprecate = function(fn, msg) {
+  // Allow for deprecating things in the process of starting up.
+  if (isUndefined(global.process)) {
+    return function() {
+      return exports.deprecate(fn, msg).apply(this, arguments);
+    };
+  }
 
-const { names } = require('multibase/src/constants')
-const { TextDecoder } = require('web-encoding')
-const utf8Decoder = new TextDecoder('utf8')
+  if (process.noDeprecation === true) {
+    return fn;
+  }
+
+  var warned = false;
+  function deprecated() {
+    if (!warned) {
+      if (process.throwDeprecation) {
+        throw new Error(msg);
+      } else if (process.traceDeprecation) {
+        console.trace(msg);
+      } else {
+        console.error(msg);
+      }
+      warned = true;
+    }
+    return fn.apply(this, arguments);
+  }
+
+  return deprecated;
+};
+
+
+var debugs = {};
+var debugEnviron;
+exports.debuglog = function(set) {
+  if (isUndefined(debugEnviron))
+    debugEnviron = process.env.NODE_DEBUG || '';
+  set = set.toUpperCase();
+  if (!debugs[set]) {
+    if (new RegExp('\\b' + set + '\\b', 'i').test(debugEnviron)) {
+      var pid = process.pid;
+      debugs[set] = function() {
+        var msg = exports.format.apply(exports, arguments);
+        console.error('%s %d: %s', set, pid, msg);
+      };
+    } else {
+      debugs[set] = function() {};
+    }
+  }
+  return debugs[set];
+};
+
 
 /**
- * Turns a Uint8Array of bytes into a string with each
- * character being the char code of the corresponding byte
+ * Echos the value of a value. Trys to print the value out
+ * in the best way possible given the different types.
  *
- * @param {Uint8Array} array The array to turn into a string
- * @returns {String}
+ * @param {Object} obj The object to print out.
+ * @param {Object} opts Optional options object that alters the output.
  */
-function uint8ArrayToAsciiString (array) {
-  let string = ''
-
-  for (let i = 0; i < array.length; i++) {
-    string += String.fromCharCode(array[i])
+/* legacy: obj, showHidden, depth, colors*/
+function inspect(obj, opts) {
+  // default options
+  var ctx = {
+    seen: [],
+    stylize: stylizeNoColor
+  };
+  // legacy...
+  if (arguments.length >= 3) ctx.depth = arguments[2];
+  if (arguments.length >= 4) ctx.colors = arguments[3];
+  if (isBoolean(opts)) {
+    // legacy...
+    ctx.showHidden = opts;
+  } else if (opts) {
+    // got an "options" object
+    exports._extend(ctx, opts);
   }
-  return string
+  // set default options
+  if (isUndefined(ctx.showHidden)) ctx.showHidden = false;
+  if (isUndefined(ctx.depth)) ctx.depth = 2;
+  if (isUndefined(ctx.colors)) ctx.colors = false;
+  if (isUndefined(ctx.customInspect)) ctx.customInspect = true;
+  if (ctx.colors) ctx.stylize = stylizeWithColor;
+  return formatValue(ctx, obj, ctx.depth);
 }
+exports.inspect = inspect;
+
+
+// http://en.wikipedia.org/wiki/ANSI_escape_code#graphics
+inspect.colors = {
+  'bold' : [1, 22],
+  'italic' : [3, 23],
+  'underline' : [4, 24],
+  'inverse' : [7, 27],
+  'white' : [37, 39],
+  'grey' : [90, 39],
+  'black' : [30, 39],
+  'blue' : [34, 39],
+  'cyan' : [36, 39],
+  'green' : [32, 39],
+  'magenta' : [35, 39],
+  'red' : [31, 39],
+  'yellow' : [33, 39]
+};
+
+// Don't use 'blue' not visible on cmd.exe
+inspect.styles = {
+  'special': 'cyan',
+  'number': 'yellow',
+  'boolean': 'yellow',
+  'undefined': 'grey',
+  'null': 'bold',
+  'string': 'green',
+  'date': 'magenta',
+  // "name": intentionally not styling
+  'regexp': 'red'
+};
+
+
+function stylizeWithColor(str, styleType) {
+  var style = inspect.styles[styleType];
+
+  if (style) {
+    return '\u001b[' + inspect.colors[style][0] + 'm' + str +
+           '\u001b[' + inspect.colors[style][1] + 'm';
+  } else {
+    return str;
+  }
+}
+
+
+function stylizeNoColor(str, styleType) {
+  return str;
+}
+
+
+function arrayToHash(array) {
+  var hash = {};
+
+  array.forEach(function(val, idx) {
+    hash[val] = true;
+  });
+
+  return hash;
+}
+
+
+function formatValue(ctx, value, recurseTimes) {
+  // Provide a hook for user-specified inspect functions.
+  // Check that value is an object with an inspect function on it
+  if (ctx.customInspect &&
+      value &&
+      isFunction(value.inspect) &&
+      // Filter out the util module, it's inspect function is special
+      value.inspect !== exports.inspect &&
+      // Also filter out any prototype objects using the circular check.
+      !(value.constructor && value.constructor.prototype === value)) {
+    var ret = value.inspect(recurseTimes, ctx);
+    if (!isString(ret)) {
+      ret = formatValue(ctx, ret, recurseTimes);
+    }
+    return ret;
+  }
+
+  // Primitive types cannot have properties
+  var primitive = formatPrimitive(ctx, value);
+  if (primitive) {
+    return primitive;
+  }
+
+  // Look up the keys of the object.
+  var keys = Object.keys(value);
+  var visibleKeys = arrayToHash(keys);
+
+  if (ctx.showHidden) {
+    keys = Object.getOwnPropertyNames(value);
+  }
+
+  // IE doesn't make error fields non-enumerable
+  // http://msdn.microsoft.com/en-us/library/ie/dww52sbt(v=vs.94).aspx
+  if (isError(value)
+      && (keys.indexOf('message') >= 0 || keys.indexOf('description') >= 0)) {
+    return formatError(value);
+  }
+
+  // Some type of object without properties can be shortcutted.
+  if (keys.length === 0) {
+    if (isFunction(value)) {
+      var name = value.name ? ': ' + value.name : '';
+      return ctx.stylize('[Function' + name + ']', 'special');
+    }
+    if (isRegExp(value)) {
+      return ctx.stylize(RegExp.prototype.toString.call(value), 'regexp');
+    }
+    if (isDate(value)) {
+      return ctx.stylize(Date.prototype.toString.call(value), 'date');
+    }
+    if (isError(value)) {
+      return formatError(value);
+    }
+  }
+
+  var base = '', array = false, braces = ['{', '}'];
+
+  // Make Array say that they are Array
+  if (isArray(value)) {
+    array = true;
+    braces = ['[', ']'];
+  }
+
+  // Make functions say that they are functions
+  if (isFunction(value)) {
+    var n = value.name ? ': ' + value.name : '';
+    base = ' [Function' + n + ']';
+  }
+
+  // Make RegExps say that they are RegExps
+  if (isRegExp(value)) {
+    base = ' ' + RegExp.prototype.toString.call(value);
+  }
+
+  // Make dates with properties first say the date
+  if (isDate(value)) {
+    base = ' ' + Date.prototype.toUTCString.call(value);
+  }
+
+  // Make error with message first say the error
+  if (isError(value)) {
+    base = ' ' + formatError(value);
+  }
+
+  if (keys.length === 0 && (!array || value.length == 0)) {
+    return braces[0] + base + braces[1];
+  }
+
+  if (recurseTimes < 0) {
+    if (isRegExp(value)) {
+      return ctx.stylize(RegExp.prototype.toString.call(value), 'regexp');
+    } else {
+      return ctx.stylize('[Object]', 'special');
+    }
+  }
+
+  ctx.seen.push(value);
+
+  var output;
+  if (array) {
+    output = formatArray(ctx, value, recurseTimes, visibleKeys, keys);
+  } else {
+    output = keys.map(function(key) {
+      return formatProperty(ctx, value, recurseTimes, visibleKeys, key, array);
+    });
+  }
+
+  ctx.seen.pop();
+
+  return reduceToSingleString(output, base, braces);
+}
+
+
+function formatPrimitive(ctx, value) {
+  if (isUndefined(value))
+    return ctx.stylize('undefined', 'undefined');
+  if (isString(value)) {
+    var simple = '\'' + JSON.stringify(value).replace(/^"|"$/g, '')
+                                             .replace(/'/g, "\\'")
+                                             .replace(/\\"/g, '"') + '\'';
+    return ctx.stylize(simple, 'string');
+  }
+  if (isNumber(value))
+    return ctx.stylize('' + value, 'number');
+  if (isBoolean(value))
+    return ctx.stylize('' + value, 'boolean');
+  // For some reason typeof null is "object", so special case here.
+  if (isNull(value))
+    return ctx.stylize('null', 'null');
+}
+
+
+function formatError(value) {
+  return '[' + Error.prototype.toString.call(value) + ']';
+}
+
+
+function formatArray(ctx, value, recurseTimes, visibleKeys, keys) {
+  var output = [];
+  for (var i = 0, l = value.length; i < l; ++i) {
+    if (hasOwnProperty(value, String(i))) {
+      output.push(formatProperty(ctx, value, recurseTimes, visibleKeys,
+          String(i), true));
+    } else {
+      output.push('');
+    }
+  }
+  keys.forEach(function(key) {
+    if (!key.match(/^\d+$/)) {
+      output.push(formatProperty(ctx, value, recurseTimes, visibleKeys,
+          key, true));
+    }
+  });
+  return output;
+}
+
+
+function formatProperty(ctx, value, recurseTimes, visibleKeys, key, array) {
+  var name, str, desc;
+  desc = Object.getOwnPropertyDescriptor(value, key) || { value: value[key] };
+  if (desc.get) {
+    if (desc.set) {
+      str = ctx.stylize('[Getter/Setter]', 'special');
+    } else {
+      str = ctx.stylize('[Getter]', 'special');
+    }
+  } else {
+    if (desc.set) {
+      str = ctx.stylize('[Setter]', 'special');
+    }
+  }
+  if (!hasOwnProperty(visibleKeys, key)) {
+    name = '[' + key + ']';
+  }
+  if (!str) {
+    if (ctx.seen.indexOf(desc.value) < 0) {
+      if (isNull(recurseTimes)) {
+        str = formatValue(ctx, desc.value, null);
+      } else {
+        str = formatValue(ctx, desc.value, recurseTimes - 1);
+      }
+      if (str.indexOf('\n') > -1) {
+        if (array) {
+          str = str.split('\n').map(function(line) {
+            return '  ' + line;
+          }).join('\n').substr(2);
+        } else {
+          str = '\n' + str.split('\n').map(function(line) {
+            return '   ' + line;
+          }).join('\n');
+        }
+      }
+    } else {
+      str = ctx.stylize('[Circular]', 'special');
+    }
+  }
+  if (isUndefined(name)) {
+    if (array && key.match(/^\d+$/)) {
+      return str;
+    }
+    name = JSON.stringify('' + key);
+    if (name.match(/^"([a-zA-Z_][a-zA-Z_0-9]*)"$/)) {
+      name = name.substr(1, name.length - 2);
+      name = ctx.stylize(name, 'name');
+    } else {
+      name = name.replace(/'/g, "\\'")
+                 .replace(/\\"/g, '"')
+                 .replace(/(^"|"$)/g, "'");
+      name = ctx.stylize(name, 'string');
+    }
+  }
+
+  return name + ': ' + str;
+}
+
+
+function reduceToSingleString(output, base, braces) {
+  var numLinesEst = 0;
+  var length = output.reduce(function(prev, cur) {
+    numLinesEst++;
+    if (cur.indexOf('\n') >= 0) numLinesEst++;
+    return prev + cur.replace(/\u001b\[\d\d?m/g, '').length + 1;
+  }, 0);
+
+  if (length > 60) {
+    return braces[0] +
+           (base === '' ? '' : base + '\n ') +
+           ' ' +
+           output.join(',\n  ') +
+           ' ' +
+           braces[1];
+  }
+
+  return braces[0] + base + ' ' + output.join(', ') + ' ' + braces[1];
+}
+
+
+// NOTE: These type checking functions intentionally don't use `instanceof`
+// because it is fragile and can be easily faked with `Object.create()`.
+function isArray(ar) {
+  return Array.isArray(ar);
+}
+exports.isArray = isArray;
+
+function isBoolean(arg) {
+  return typeof arg === 'boolean';
+}
+exports.isBoolean = isBoolean;
+
+function isNull(arg) {
+  return arg === null;
+}
+exports.isNull = isNull;
+
+function isNullOrUndefined(arg) {
+  return arg == null;
+}
+exports.isNullOrUndefined = isNullOrUndefined;
+
+function isNumber(arg) {
+  return typeof arg === 'number';
+}
+exports.isNumber = isNumber;
+
+function isString(arg) {
+  return typeof arg === 'string';
+}
+exports.isString = isString;
+
+function isSymbol(arg) {
+  return typeof arg === 'symbol';
+}
+exports.isSymbol = isSymbol;
+
+function isUndefined(arg) {
+  return arg === void 0;
+}
+exports.isUndefined = isUndefined;
+
+function isRegExp(re) {
+  return isObject(re) && objectToString(re) === '[object RegExp]';
+}
+exports.isRegExp = isRegExp;
+
+function isObject(arg) {
+  return typeof arg === 'object' && arg !== null;
+}
+exports.isObject = isObject;
+
+function isDate(d) {
+  return isObject(d) && objectToString(d) === '[object Date]';
+}
+exports.isDate = isDate;
+
+function isError(e) {
+  return isObject(e) &&
+      (objectToString(e) === '[object Error]' || e instanceof Error);
+}
+exports.isError = isError;
+
+function isFunction(arg) {
+  return typeof arg === 'function';
+}
+exports.isFunction = isFunction;
+
+function isPrimitive(arg) {
+  return arg === null ||
+         typeof arg === 'boolean' ||
+         typeof arg === 'number' ||
+         typeof arg === 'string' ||
+         typeof arg === 'symbol' ||  // ES6 symbol
+         typeof arg === 'undefined';
+}
+exports.isPrimitive = isPrimitive;
+
+exports.isBuffer = require('./support/isBuffer');
+
+function objectToString(o) {
+  return Object.prototype.toString.call(o);
+}
+
+
+function pad(n) {
+  return n < 10 ? '0' + n.toString(10) : n.toString(10);
+}
+
+
+var months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep',
+              'Oct', 'Nov', 'Dec'];
+
+// 26 Feb 16:19:34
+function timestamp() {
+  var d = new Date();
+  var time = [pad(d.getHours()),
+              pad(d.getMinutes()),
+              pad(d.getSeconds())].join(':');
+  return [d.getDate(), months[d.getMonth()], time].join(' ');
+}
+
+
+// log is just a thin wrapper to console.log that prepends a timestamp
+exports.log = function() {
+  console.log('%s - %s', timestamp(), exports.format.apply(exports, arguments));
+};
+
 
 /**
- * Turns a `Uint8Array` into a string.
+ * Inherit the prototype methods from one constructor into another.
  *
- * Supports `utf8`, `utf-8` and any encoding supported by the multibase module.
+ * The Function.prototype.inherits from lang.js rewritten as a standalone
+ * function (not on Function.prototype). NOTE: If this file is to be loaded
+ * during bootstrapping this function needs to be rewritten using some native
+ * functions as prototype setup using normal JavaScript does not work as
+ * expected during bootstrapping (see mirror.js in r114903).
  *
- * Also `ascii` which is similar to node's 'binary' encoding.
- *
- * @param {Uint8Array} array The array to turn into a string
- * @param {String} [encoding=utf8] The encoding to use
- * @returns {String}
- * @see {@link https://www.npmjs.com/package/multibase|multibase} for supported encodings other than `utf8`
+ * @param {function} ctor Constructor function which needs to inherit the
+ *     prototype.
+ * @param {function} superCtor Constructor function to inherit prototype from.
  */
-function toString (array, encoding = 'utf8') {
-  if (encoding === 'utf8' || encoding === 'utf-8') {
-    return utf8Decoder.decode(array)
+exports.inherits = require('inherits');
+
+exports._extend = function(origin, add) {
+  // Don't do anything if add isn't an object
+  if (!add || !isObject(add)) return origin;
+
+  var keys = Object.keys(add);
+  var i = keys.length;
+  while (i--) {
+    origin[keys[i]] = add[keys[i]];
   }
+  return origin;
+};
 
-  if (encoding === 'ascii') {
-    return uint8ArrayToAsciiString(array)
-  }
-
-  const codec = names[encoding]
-
-  if (!codec) {
-    throw new Error('Unknown base')
-  }
-
-  return codec.encode(array)
+function hasOwnProperty(obj, prop) {
+  return Object.prototype.hasOwnProperty.call(obj, prop);
 }
 
-module.exports = toString
-
-},{"multibase/src/constants":48,"web-encoding":56}],52:[function(require,module,exports){
+}).call(this)}).call(this,require('_process'),typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
+},{"./support/isBuffer":62,"_process":54,"inherits":61}],64:[function(require,module,exports){
 module.exports = read
 
 var MSB = 0x80
@@ -6478,7 +8227,7 @@ function read(buf, offset) {
   return res
 }
 
-},{}],53:[function(require,module,exports){
+},{}],65:[function(require,module,exports){
 module.exports = encode
 
 var MSB = 0x80
@@ -6506,13 +8255,20 @@ function encode(num, out, offset) {
   return out
 }
 
-},{}],54:[function(require,module,exports){
-arguments[4][13][0].apply(exports,arguments)
-},{"./decode.js":52,"./encode.js":53,"./length.js":55,"dup":13}],55:[function(require,module,exports){
-arguments[4][14][0].apply(exports,arguments)
-},{"dup":14}],56:[function(require,module,exports){
-arguments[4][15][0].apply(exports,arguments)
-},{"dup":15}],57:[function(require,module,exports){
+},{}],66:[function(require,module,exports){
+arguments[4][18][0].apply(exports,arguments)
+},{"./decode.js":64,"./encode.js":65,"./length.js":67,"dup":18}],67:[function(require,module,exports){
+arguments[4][19][0].apply(exports,arguments)
+},{"dup":19}],68:[function(require,module,exports){
+"use strict"
+
+exports.TextEncoder =
+  typeof TextEncoder !== "undefined" ? TextEncoder : require("util").TextEncoder
+
+exports.TextDecoder =
+  typeof TextDecoder !== "undefined" ? TextDecoder : require("util").TextDecoder
+
+},{"util":63}],69:[function(require,module,exports){
 /*
 	ISC License
 
@@ -6575,7 +8331,7 @@ const cidV0ToV1Base32 = (ipfsHash) => {
 
 exports.cidV0ToV1Base32 = cidV0ToV1Base32;
 
-},{"cids":17}],58:[function(require,module,exports){
+},{"cids":8}],70:[function(require,module,exports){
 /*
 	ISC License
 
@@ -6649,6 +8405,15 @@ module.exports = {
 		return this.encode('swarm-ns', swarmHash);
 	},
 
+    /**
+	* Encode a arweave address into a content hash
+	* @param {string} swarmHash string containing a arweave address
+	* @return {string} the resulting content hash
+	*/
+    fromArweave: function(arweave) {
+        return this.encode('arweave-ns', arweave);
+    },
+
 	/**
 	* General purpose encoding function
   * @param {string} codec 
@@ -6672,8 +8437,8 @@ module.exports = {
 	},
 }
 
-},{"./helpers":57,"./profiles":59,"multicodec":32,"multihashes":43}],59:[function(require,module,exports){
-(function (Buffer){
+},{"./helpers":69,"./profiles":71,"multicodec":21,"multihashes":53}],71:[function(require,module,exports){
+(function (Buffer){(function (){
 /*
 	ISC License
 
@@ -6734,7 +8499,6 @@ const isCryptographicIPNS =  (cid) => {
     // ok, CID looks fine
     return true
   } catch (_) { return false }
-  return false
 }
 
 /**
@@ -6784,6 +8548,13 @@ const encodes = {
   */
   utf8: (value) => {
     return Buffer.from(value, 'utf8');
+  },
+  /**
+  * @param {string} value
+  * @return {Buffer}
+  */
+  arweave: (value) => {
+    return base64.toUint8Array(value)
   },
 };
 
@@ -6855,6 +8626,10 @@ const profiles = {
     encode: encodes.ipns,
     decode: decodes.ipns,
   },
+  'arweave-ns': {
+    encode: encodes.arweave,
+    decode: decodes.base64,
+  },
   'default': {
     encode: encodes.utf8,
     decode: decodes.utf8,
@@ -6864,6 +8639,6 @@ const profiles = {
 exports.hexStringToBuffer = hexStringToBuffer;
 exports.profiles = profiles;
 
-}).call(this,require("buffer").Buffer)
-},{"buffer":4,"cids":17,"js-base64":19,"multihashes":43}]},{},[58])(58)
+}).call(this)}).call(this,require("buffer").Buffer)
+},{"buffer":4,"cids":8,"js-base64":10,"multihashes":53}]},{},[70])(70)
 });
