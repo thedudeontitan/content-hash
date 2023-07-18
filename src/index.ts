@@ -1,5 +1,5 @@
 import { varint } from "multiformats";
-import { cidForWeb, cidV0ToV1Base32, concatUint8Arrays } from "./helpers.js";
+import { concatUint8Arrays } from "./helpers.js";
 import { codeToName, nameToCode, type Codec, type CodecId } from "./map.js";
 import {
   bytesToHexString,
@@ -8,10 +8,7 @@ import {
   type Profile,
 } from "./profiles.js";
 
-export const helpers = {
-  cidForWeb,
-  cidV0ToV1Base32,
-};
+export { cidForWeb, cidV0ToV1Base32 } from "./helpers.js";
 
 /**
  * Decode a Content Hash.
