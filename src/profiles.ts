@@ -10,16 +10,16 @@ import {
 
 type Bytes = Uint8Array;
 
+const stripHexPrefix = (value: string): string =>
+  value.startsWith("0x") ? value.slice(2) : value;
+
 /**
  * Convert a hexadecimal string to Bytes, the string can start with or without '0x'
  * @param hex a hexadecimal value
  * @return the resulting Bytes
  */
 export const hexStringToBytes = (hex: string): Bytes => {
-  let value: string = hex;
-  if (value.startsWith("0x")) {
-    value = value.slice(2);
-  }
+  const value = stripHexPrefix(hex);
 
   if (value.length % 2 !== 0) {
     throw new Error("Invalid hex string");
@@ -90,12 +90,13 @@ const encodes = {
     return CID.parse(value).toV1().bytes;
   },
   ipns: (value: string): Bytes => {
+    const value_ = stripHexPrefix(value);
     let cid: CID;
     try {
-      cid = CID.parse(value, value.startsWith("k") ? base36 : undefined);
+      cid = CID.parse(value_, value_.startsWith("k") ? base36 : undefined);
     } catch (e) {
       // legacy v0 decode
-      const bytes = base58btc.decode(`z${value}`);
+      const bytes = base58btc.decode(`z${value_}`);
       cid = new CID(0, 0x72, createDigest(0x00, bytes.slice(2)), bytes);
     }
     if (!isCryptographicIPNS(cid)) {

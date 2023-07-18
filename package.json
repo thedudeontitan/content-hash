@@ -1,6 +1,6 @@
 {
   "name": "@ensdomains/content-hash",
-  "version": "3.0.0-beta.2",
+  "version": "3.0.0-beta.4",
   "description": "A simple tool to encode/decode content hash for EIP 1577 compliant ENS Resolvers (fork of pldespaigne/content-hash)",
   "type": "module",
   "main": "./dist/cjs/index.js",
@@ -27,7 +27,8 @@
     "build:cjs": "tsc --project tsconfig.build.json --module commonjs --outDir ./dist/cjs --removeComments --verbatimModuleSyntax false && echo > ./dist/cjs/package.json '{\"type\":\"commonjs\"}'",
     "build:esm": "tsc --project tsconfig.build.json --module es2022 --outDir ./dist/esm && echo > ./dist/esm/package.json '{\"type\":\"module\",\"sideEffects\":false}'",
     "build:types": "tsc --project tsconfig.build.json --module esnext --declarationDir ./dist/types --emitDeclarationOnly --declaration --declarationMap",
-    "build": "pnpm run clean && pnpm run build:cjs && pnpm run build:esm && pnpm run build:types"
+    "build": "pnpm run clean && pnpm run build:cjs && pnpm run build:esm && pnpm run build:types",
+    "prepublish": "pnpm run build"
   },
   "keywords": [
     "ethereum",
