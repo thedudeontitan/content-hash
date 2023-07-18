@@ -1,12 +1,12 @@
 import { varint } from "multiformats";
-import { cidForWeb, cidV0ToV1Base32, concatUint8Arrays } from "./helpers";
-import { Codec, codeToName, nameToCode } from "./map";
+import { cidForWeb, cidV0ToV1Base32, concatUint8Arrays } from "./helpers.js";
+import { codeToName, nameToCode, type Codec, type CodecId } from "./map.js";
 import {
-  Profile,
   bytesToHexString,
   hexStringToBytes,
   profiles,
-} from "./profiles";
+  type Profile,
+} from "./profiles.js";
 
 export const helpers = {
   cidForWeb,
@@ -22,8 +22,8 @@ export const decode = (contentHash: string): string => {
   const bytes = hexStringToBytes(contentHash);
   const [code, offset] = varint.decode(bytes);
   const value = bytes.slice(offset);
-  const name = codeToName[code];
-  let profile = profiles[name] as Profile | undefined;
+  const name = codeToName[code as CodecId];
+  let profile = profiles[name as keyof typeof profiles] as Profile | undefined;
   if (!profile) profile = profiles["default"];
   return profile.decode(value);
 };
@@ -34,7 +34,7 @@ export const decode = (contentHash: string): string => {
  * @param value Content to encode
  */
 export const encode = (name: Codec, value: string): string => {
-  let profile = profiles[name] as Profile | undefined;
+  let profile = profiles[name as keyof typeof profiles] as Profile | undefined;
   if (!profile) profile = profiles["default"];
   const bytes = profile.encode(value);
   const code = nameToCode[name] as number;
@@ -53,5 +53,5 @@ export const encode = (name: Codec, value: string): string => {
 export const getCodec = (contentHash: string): Codec | undefined => {
   const bytes = hexStringToBytes(contentHash);
   const [code] = varint.decode(bytes);
-  return codeToName[code];
+  return codeToName[code as CodecId];
 };

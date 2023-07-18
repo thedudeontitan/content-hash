@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { cidForWeb, cidV0ToV1Base32 } from "./helpers";
+import { cidForWeb, cidV0ToV1Base32 } from "./helpers.js";
 
 const ipfs_CIDv0 = "QmRAQB6YaCyidP37UdDnjFY5vQuiBrcqdyoW1CuDgwxkD4";
 const ipfsBase32DagPb =

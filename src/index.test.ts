@@ -1,6 +1,6 @@
 import { describe, expect, test } from "vitest";
 
-import { decode, encode, getCodec } from "./index";
+import { decode, encode, getCodec } from "./index.js";
 
 const ipfs_CIDv0 = "QmRAQB6YaCyidP37UdDnjFY5vQuiBrcqdyoW1CuDgwxkD4";
 const ipfs_CIDv1 =

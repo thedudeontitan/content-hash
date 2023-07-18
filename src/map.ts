@@ -18,4 +18,5 @@ export const nameToCode = {
   arweave: 0xb29910,
 } as const;
 
+export type CodecId = keyof typeof codeToName;
 export type Codec = keyof typeof nameToCode;
