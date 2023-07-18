@@ -8,6 +8,8 @@ import {
   type Profile,
 } from "./profiles.js";
 
+export { type Codec, type CodecId } from "./map.js";
+
 export { cidForWeb, cidV0ToV1Base32 } from "./helpers.js";
 
 /**
