@@ -80,14 +80,4 @@ typings/
 .dynamodb/
 
 
-
-# --------------------
-#      CUSTOM
-# --------------------
-
-notes.txt
-
-
-
-
-
+dist/
