@@ -114,6 +114,9 @@ const encodes = {
   arweave: (value: string): Bytes => {
     return base64Decode(value);
   },
+  walrus: (value: string): Bytes => {
+    return base64Decode(value);
+  }
 };
 
 /**
@@ -181,6 +184,10 @@ export const profiles = {
   },
   arweave: {
     encode: encodes.arweave,
+    decode: decodes.base64,
+  },
+  walrus: {
+    encode: encodes.walrus,
     decode: decodes.base64,
   },
   default: {
