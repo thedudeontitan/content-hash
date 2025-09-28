@@ -115,7 +115,7 @@ const encodes = {
     return base64Decode(value);
   },
   walrus: (value: string): Bytes => {
-    return base64Decode(value);
+    return hexStringToBytes(value);
   }
 };
 
@@ -153,6 +153,9 @@ const decodes = {
   base64: (value: Bytes): string => {
     return base64url.encode(value).substring(1);
   },
+  hex: (value: Bytes): string => {
+    return bytesToHexString(value);
+  },
 };
 
 export type Profile = {
@@ -188,7 +191,7 @@ export const profiles = {
   },
   walrus: {
     encode: encodes.walrus,
-    decode: decodes.base64,
+    decode: decodes.hex,
   },
   default: {
     encode: encodes.utf8,
